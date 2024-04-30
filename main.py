@@ -1,59 +1,104 @@
-import pygame
+import chip
+
 import sys
+import enum
+
+import pygame
+
+
+# перечисление "константы окна игры".
+class WindowParameters(enum.IntEnum):
+    # размер клетки;
+    CELL_SIZE = 50
+
+    # ширина сетки игрового поля;
+    GRID_WIDTH = 14
+
+    # высота сетки игрового поля;
+    GRID_HEIGHT = 14
+
+    # ширина окна игры;
+    WIDTH = CELL_SIZE * GRID_WIDTH
+
+    # высота окна игры.
+    HEIGHT = CELL_SIZE * GRID_HEIGHT
+
 
 if __name__ == "__main__":
-    # Инициализация Pygame
     pygame.init()
 
-    # Размеры окна игры
-    cell_size = 40
-    grid_width = 15
-    grid_height = 15
-    width = cell_size * grid_width
-    height = cell_size * grid_height
-    screen = pygame.display.set_mode((width, height))
+    screen = pygame.display.set_mode((WindowParameters.WIDTH,
+                                      WindowParameters.HEIGHT))
 
-    # Цвета
-    black = (0, 0, 0)
-    white = (255, 255, 255)
-
-    # Заголовок окна
+    # заголовок окна
     pygame.display.set_caption("Qwirkle Game")
 
-    # Сетка для хранения фишек
-    grid = [[None for _ in range(grid_width)] for _ in range(grid_height)]
+    # сетка для хранения фишек
+    grid = [[None for _ in range(WindowParameters.GRID_WIDTH)]
+            for _ in range(WindowParameters.GRID_HEIGHT)]
+
 
     def draw_grid():
-        for x in range(0, width, cell_size):  # Для каждой колонки
-            for y in range(0, height, cell_size):  # Для каждой строки
-                rect = pygame.Rect(x, y, cell_size, cell_size)
-                pygame.draw.rect(screen, black, rect, 1)
-                if grid[y // cell_size][x // cell_size]:
-                    color = pygame.Color('red')
-                    pygame.draw.circle(screen, color, (x + cell_size // 2, y + cell_size // 2), cell_size // 3)
+        for x in range(0, WindowParameters.WIDTH, WindowParameters.CELL_SIZE):
+            for y in range(0, WindowParameters.HEIGHT, WindowParameters.CELL_SIZE):
+                rect = pygame.Rect(x, y, WindowParameters.CELL_SIZE, WindowParameters.CELL_SIZE)
+
+                grid_x = x // WindowParameters.CELL_SIZE
+                grid_y = y // WindowParameters.CELL_SIZE
+
+                if grid[grid_y][grid_x]:
+                    pygame.draw.rect(screen,
+                                     pygame.Color("black"),
+                                     rect,
+                                     WindowParameters.CELL_SIZE // 2)
+
+                    chip.draw_figure(screen,
+                                     x,
+                                     y,
+                                     WindowParameters.CELL_SIZE,
+                                     pygame.Color("red"),
+                                     chip.Figures.EIGHT_PT_STAR)
+                else:
+                    pygame.draw.rect(screen, pygame.Color("black"), rect, 1)
 
 
-    def handle_click(pos):
+    def handle_click(pos, previous_chip_x, previous_chip_y):
         x, y = pos
-        grid_x = x // cell_size
-        grid_y = y // cell_size
+
+        grid_x = x // WindowParameters.CELL_SIZE
+        grid_y = y // WindowParameters.CELL_SIZE
+
+        if previous_chip_x >= 0 and previous_chip_y >= 0:
+            grid[previous_chip_y][previous_chip_x] = None
+
+        # помещение фишки в клетку:
         if grid[grid_y][grid_x] is None:
-            grid[grid_y][grid_x] = 'Red'  # Пример установки фишки, можно добавить выбор цвета
+            grid[grid_y][grid_x] = 'Red'
+
+        return grid_x, grid_y
 
 
     def game_cycle():
-        # Основной игровой цикл
+        previous_chip_x, previous_chip_y = -1, -1
+
+        # основной игровой цикл:
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    handle_click(pygame.mouse.get_pos())
+                    previous_chip_x, previous_chip_y = handle_click(pygame.mouse.get_pos(),
+                                                                    previous_chip_x,
+                                                                    previous_chip_y)
 
-            screen.fill(white)
-            draw_grid()  # Рисование сетки
-            pygame.display.flip()  # Обновление экрана
+            screen.fill(pygame.Color("white"))
+
+            # рисование сетки:
+            draw_grid()
+
+            # обновление экрана:
+            pygame.display.flip()
+
 
     game_cycle()
-
