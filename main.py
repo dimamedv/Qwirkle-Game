@@ -25,16 +25,21 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((WindowParameters.WIDTH,
                                       WindowParameters.HEIGHT))
 
-    # заголовок окна
+    # заголовок окна.
     pygame.display.set_caption("Квиркл")
 
     # игровое поле.
     field = Field()
 
+    # копия игрового поля.
+    field_copy = field.copy()
 
-    def draw_field():
+
+    def draw_field(field_for_draw):
         """
         рисует игровое поле.
+        :param field_for_draw: отрисовываемое
+        игровое поле.
         """
 
         for x in range(0, WindowParameters.WIDTH, WindowParameters.CELL_SIZE):
@@ -44,8 +49,8 @@ if __name__ == "__main__":
                 cell_column_index = x // WindowParameters.CELL_SIZE
                 cell_row_index = y // WindowParameters.CELL_SIZE
 
-                cell_content = field.get_content_of_cell(cell_row_index,
-                                                         cell_column_index)
+                cell_content = field_for_draw.get_content_of_cell(
+                    (cell_row_index, cell_column_index))
 
                 if isinstance(cell_content, Chip):
                     pygame.draw.rect(screen,
@@ -55,31 +60,26 @@ if __name__ == "__main__":
 
                     cell_content.draw_figure(screen, x, y, WindowParameters.CELL_SIZE)
 
-                    if field.has_at_least_one_neighboring_chip_to_this_chip(cell_row_index,
-                                                                            cell_column_index):
-                        border_color = pygame.Color("Green")
-                    else:
-                        border_color = pygame.Color("Red")
+                    if (cell_row_index, cell_column_index) == field_for_draw.last_choice:
+                        if field_for_draw.has_at_least_one_neighboring_chip_to_this_chip(
+                                (cell_row_index, cell_column_index)):
+                            border_color = pygame.Color("Green")
+                        else:
+                            border_color = pygame.Color("Red")
 
-                    pygame.draw.rect(screen, border_color, rect, 2)
+                        pygame.draw.rect(screen, border_color, rect, 2)
                 else:
                     pygame.draw.rect(screen, pygame.Color("black"), rect, 1)
 
 
-    def handle_click(mouse_pos,
-                     previous_chip_cell_row_index,
-                     previous_chip_cell_column_index):
+    def handle_click(mouse_pos, field_for_edit):
         """
-        обрабатывает событие клика мыши по сетке игрового
-        поля.
-        :param mouse_pos: позиция мыши в окне на момент
-        совершения клика;
-        :param previous_chip_cell_row_index: индекс
-        строки клетки игрового поля, в которую была помещена
-        предыдущая фишка;
-        :param previous_chip_cell_column_index: индекс
-        столбца клетки игрового поля, в которую была помещена
-        предыдущая фишка;
+        обрабатывает событие клика мыши по сетке
+        игрового поля.
+        :param mouse_pos: позиция мыши в окне на
+        момент совершения клика;
+        :param field_for_edit: изменяемое игровое
+        поле.
         """
 
         x, y = mouse_pos
@@ -88,19 +88,15 @@ if __name__ == "__main__":
         cell_row_index = y // WindowParameters.CELL_SIZE
 
         # помещение фишки в клетку:
-        if not field.has_chip_in_this_cell(cell_row_index, cell_column_index):
-            field.place_chip(Chip(Chip.Figures.DIAMOND, pygame.Color("purple")),
-                             cell_row_index,
-                             cell_column_index)
+        if not field_for_edit.has_chip_in_this_cell((cell_row_index, cell_column_index)):
+            field_for_edit.place_chip(Chip(Chip.Figures.DIAMOND, pygame.Color("purple")),
+                                      (cell_row_index, cell_column_index))
 
-        if previous_chip_cell_row_index >= 0 and \
-                previous_chip_cell_column_index >= 0 and \
-                (previous_chip_cell_row_index != cell_row_index or
-                 previous_chip_cell_column_index != cell_column_index):
-            field.remove_chip(previous_chip_cell_row_index,
-                              previous_chip_cell_column_index)
+        if field_for_edit.last_choice != (-1, -1) and \
+                (cell_row_index, cell_column_index) != field_for_edit.last_choice:
+            field_for_edit.remove_chip(field_for_edit.last_choice)
 
-        return cell_row_index, cell_column_index
+        field_for_edit.set_last_choice((cell_row_index, cell_column_index))
 
 
     def game_cycle():
@@ -108,7 +104,11 @@ if __name__ == "__main__":
         функция игрового цикла.
         """
 
-        previous_chip_cell_row_index, previous_chip_cell_column_index = -1, -1
+        # глобальная переменная игровго поля.
+        global field
+
+        # глобальная переменная копии игровго поля.
+        global field_copy
 
         # основной игровой цикл:
         while True:
@@ -119,15 +119,18 @@ if __name__ == "__main__":
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        (previous_chip_cell_row_index,
-                         previous_chip_cell_column_index) = handle_click(pygame.mouse.get_pos(),
-                                                                         previous_chip_cell_row_index,
-                                                                         previous_chip_cell_column_index)
+                        field_copy = field.copy(copy_last_choice=True)
+
+                        handle_click(pygame.mouse.get_pos(), field_copy)
+
+                        field = field_copy.copy(copy_last_choice=True)
+                    elif event.button == 3:
+                        field.reset_last_choice()
 
             screen.fill(pygame.Color("white"))
 
-            # рисование сетки:
-            draw_field()
+            # рисование поля:
+            draw_field(field)
 
             # обновление экрана:
             pygame.display.flip()
