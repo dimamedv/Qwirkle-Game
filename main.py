@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
         # помещение фишки в клетку:
         if not field_for_edit.has_chip_in_this_cell((cell_row_index, cell_column_index)):
-            field_for_edit.place_chip(Chip(Chip.Figures.DIAMOND, pygame.Color("purple")),
+            field_for_edit.place_chip(Chip(Chip.Figures.EIGHT_PT_STAR, pygame.Color("orange")),
                                       (cell_row_index, cell_column_index))
 
         if field_for_edit.last_choice != (-1, -1) and \
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                         handle_click(pygame.mouse.get_pos(), field_copy)
 
                         field = field_copy.copy(copy_last_choice=True)
-                    elif event.button == 3:
+                    elif event.button == 3 and field.is_correct_last_choice():
                         field.reset_last_choice()
 
             screen.fill(pygame.Color("white"))
