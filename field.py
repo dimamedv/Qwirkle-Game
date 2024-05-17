@@ -1,7 +1,5 @@
 from chip import Chip
 
-import enum
-
 
 # класс "игровое поле".
 class Field:
@@ -28,7 +26,26 @@ class Field:
     CELL_ROW_INDEX_SHIFT_INIT_VALUE = 107
 
     # сдвиг индекса столбца клетки по умолчанию.
-    CELL_COLUMN_INDEX_SHIFT_INIT_VALUE = 107
+    CELL_COLUMN_INDEX_SHIFT_INIT_VALUE = CELL_ROW_INDEX_SHIFT_INIT_VALUE
+
+    # максимальное значение сдвига индекса клетки.
+    CELL_INDEX_SHIFT_MAX_VALUE = N_CELLS_IN_WIDTH - DISPLAYED_PART_N_CELLS_IN_WIDTH
+
+    # константа сдвига отображаемой области
+    # игровго поля на одну клетку вверх.
+    SHIFT_DISPLAYED_PART_UP = 0
+
+    # константа сдвига отображаемой области
+    # игровго поля на одну клетку вниз.
+    SHIFT_DISPLAYED_PART_DOWN = 1
+
+    # константа сдвига отображаемой области
+    # игровго поля на одну клетку влево.
+    SHIFT_DISPLAYED_PART_LEFT = 2
+
+    # константа сдвига отображаемой области
+    # игровго поля на одну клетку вправо.
+    SHIFT_DISPLAYED_PART_RIGHT = 3
 
     def __init__(self,
                  content: list[list[Chip, None]] = None,
@@ -283,11 +300,11 @@ class Field:
             n_neighboring_chips += self.has_chip_in_this_cell(
                 (cell_indexes[0], cell_indexes[1] - 1))
 
-        if cell_indexes[0] < self.DISPLAYED_PART_N_CELLS_IN_HEIGHT:
+        if cell_indexes[0] < self.N_CELLS_IN_HEIGHT:
             n_neighboring_chips += self.has_chip_in_this_cell(
                 (cell_indexes[0] + 1, cell_indexes[1]))
 
-        if cell_indexes[1] < self.DISPLAYED_PART_N_CELLS_IN_WIDTH:
+        if cell_indexes[1] < self.N_CELLS_IN_WIDTH:
             n_neighboring_chips += self.has_chip_in_this_cell(
                 (cell_indexes[0], cell_indexes[1] + 1))
 
@@ -305,3 +322,30 @@ class Field:
 
         return (self.has_only_one_chip() or
                 self.has_at_least_one_neighboring_chip_to_this_chip(self.__last_choice))
+
+    def shift_displayed_part(self,
+                             direction: int) -> None:
+        """
+        сдвигает отображаемую область игрового поля на
+        одну клетку в указанном направлении.
+        :param direction: направление, в котором будет
+        сдвинута отображаемая область поля.
+        """
+
+        if direction not in (self.SHIFT_DISPLAYED_PART_UP,
+                             self.SHIFT_DISPLAYED_PART_DOWN,
+                             self.SHIFT_DISPLAYED_PART_LEFT,
+                             self.SHIFT_DISPLAYED_PART_RIGHT):
+            raise ValueError("there is no such direction for shift")
+
+        match direction:
+            case self.SHIFT_DISPLAYED_PART_UP:
+                self.cell_row_index_shift -= self.cell_row_index_shift > 0
+            case self.SHIFT_DISPLAYED_PART_DOWN:
+                self.cell_row_index_shift += \
+                    self.cell_row_index_shift < self.CELL_INDEX_SHIFT_MAX_VALUE
+            case self.SHIFT_DISPLAYED_PART_LEFT:
+                self.cell_column_index_shift -= self.cell_column_index_shift > 0
+            case self.SHIFT_DISPLAYED_PART_RIGHT:
+                self.cell_column_index_shift += \
+                    self.cell_column_index_shift < self.CELL_INDEX_SHIFT_MAX_VALUE

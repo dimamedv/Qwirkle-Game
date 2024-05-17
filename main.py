@@ -122,6 +122,8 @@ if __name__ == "__main__":
         # глобальная переменная копии игровго поля.
         global field_copy
 
+        is_shift_of_displayed_part_blocked = True
+
         # основной игровой цикл:
         while True:
             for event in pygame.event.get():
@@ -138,6 +140,23 @@ if __name__ == "__main__":
                         field = field_copy.copy(copy_last_choice=True)
                     elif event.button == 3 and field.is_correct_last_choice():
                         field.reset_last_choice()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_b:
+                        is_shift_of_displayed_part_blocked = not is_shift_of_displayed_part_blocked
+
+                    if is_shift_of_displayed_part_blocked is False:
+                        match event.key:
+                            case pygame.K_w | pygame.K_UP:
+                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_UP)
+                            case pygame.K_s | pygame.K_DOWN:
+                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_DOWN)
+                            case pygame.K_a | pygame.K_LEFT:
+                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_LEFT)
+                            case pygame.K_d | pygame.K_RIGHT:
+                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_RIGHT)
+                            case pygame.K_c:
+                                field.reset_cell_row_index_shift()
+                                field.reset_cell_column_index_shift()
 
             screen.fill(pygame.Color("white"))
 
