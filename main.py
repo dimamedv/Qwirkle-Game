@@ -19,6 +19,18 @@ class WindowParameters(enum.IntEnum):
     HEIGHT = CELL_SIZE * Field.DISPLAYED_PART_N_CELLS_IN_HEIGHT
 
 
+# клавиши для сдвига отображаемой части
+# игрового поля
+SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS = (
+    pygame.K_w,
+    pygame.K_s,
+    pygame.K_a,
+    pygame.K_d,
+    pygame.K_UP,
+    pygame.K_DOWN,
+    pygame.K_LEFT,
+    pygame.K_RIGHT)
+
 if __name__ == "__main__":
     pygame.init()
 
@@ -64,11 +76,13 @@ if __name__ == "__main__":
                     cell_content.draw_figure(screen, (x, y), WindowParameters.CELL_SIZE)
 
                     if (cell_row_index, cell_column_index) == field_for_draw.last_choice:
-                        if field_for_draw.has_at_least_one_neighboring_chip_to_this_chip(
+                        if field_for_draw.n_laid_out_chips == 1:
+                            border_color = pygame.Color("#1E90FF")
+                        elif field_for_draw.has_at_least_one_neighboring_chip_to_this_chip(
                                 (cell_row_index, cell_column_index)):
-                            border_color = pygame.Color("Green")
+                            border_color = pygame.Color("green")
                         else:
-                            border_color = pygame.Color("Red")
+                            border_color = pygame.Color("red")
 
                         pygame.draw.rect(screen, border_color, rect, 2)
                 else:
@@ -122,7 +136,21 @@ if __name__ == "__main__":
         # глобальная переменная копии игровго поля.
         global field_copy
 
-        is_shift_of_displayed_part_blocked = True
+        # звук выложенной на поле фишки.
+        laid_out_sound = pygame.mixer.Sound(
+            "resources/sounds/chip_was_put_up.wav")
+
+        # звук сдвига отображаемой части игрового поля.
+        shift_of_displayed_part_of_field_sound = pygame.mixer.Sound(
+            "resources/sounds/shift_of_displayed_part_of_field.wav")
+
+        # флаг, сообщающий о том, заблокирован сдвиг
+        # отображаемой части игрового поля или нет.
+        is_shift_of_displayed_part_blocked = False
+
+        # флаг, сообщающий о том, выключены звуки
+        # или нет.
+        are_sounds_muted = False
 
         # основной игровой цикл:
         while True:
@@ -140,27 +168,38 @@ if __name__ == "__main__":
                         field = field_copy.copy(copy_last_choice=True)
                     elif event.button == 3 and field.is_correct_last_choice():
                         field.reset_last_choice()
+
+                        if not are_sounds_muted:
+                            laid_out_sound.play()
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_b:
-                        is_shift_of_displayed_part_blocked = not is_shift_of_displayed_part_blocked
+                    match event.key:
+                        case pygame.K_b:
+                            is_shift_of_displayed_part_blocked = \
+                                not is_shift_of_displayed_part_blocked
+                        case pygame.K_m:
+                            are_sounds_muted = not are_sounds_muted
 
                     if is_shift_of_displayed_part_blocked is False:
-                        match event.key:
-                            case pygame.K_w | pygame.K_UP:
-                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_UP)
-                            case pygame.K_s | pygame.K_DOWN:
-                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_DOWN)
-                            case pygame.K_a | pygame.K_LEFT:
-                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_LEFT)
-                            case pygame.K_d | pygame.K_RIGHT:
-                                field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_RIGHT)
-                            case pygame.K_c:
-                                field.reset_cell_row_index_shift()
-                                field.reset_cell_column_index_shift()
+                        if event.key == pygame.K_c:
+                            field.reset_cell_row_index_shift()
+                            field.reset_cell_column_index_shift()
+                        elif event.key in SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS:
+                            match event.key:
+                                case pygame.K_w | pygame.K_UP:
+                                    field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_UP)
+                                case pygame.K_s | pygame.K_DOWN:
+                                    field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_DOWN)
+                                case pygame.K_a | pygame.K_LEFT:
+                                    field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_LEFT)
+                                case pygame.K_d | pygame.K_RIGHT:
+                                    field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_RIGHT)
+
+                            if not are_sounds_muted:
+                                shift_of_displayed_part_of_field_sound.play()
 
             screen.fill(pygame.Color("white"))
 
-            # рисование поля:
+            # отрисовка поля:
             draw_field(field)
 
             # обновление экрана:

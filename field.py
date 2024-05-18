@@ -102,6 +102,15 @@ class Field:
                      self.__cell_column_index_shift)
 
     @property
+    def n_laid_out_chips(self) -> int:
+        """
+        возвращает значение поля __n_laid_out_chips.
+        :return: значение поля __n_laid_out_chips.
+        """
+
+        return self.__n_laid_out_chips
+
+    @property
     def last_choice(self) -> tuple[int, int]:
         """
         возвращает значение поля __last_choice.
@@ -146,7 +155,7 @@ class Field:
         """
         устанавливает новое значение поля __cell_row_index_shift.
         :param cell_row_index_shift_new_value: новое значение
-        поля __cell_row_index_shift..
+        поля __cell_row_index_shift.
         """
 
         self.__cell_row_index_shift = cell_row_index_shift_new_value
@@ -175,7 +184,7 @@ class Field:
         """
         устанавливает новое значение поля __cell_row_index_shift.
         :param cell_column_index_shift_new_value: новое значение
-        поля __cell_row_index_shift..
+        поля __cell_row_index_shift.
         """
 
         self.__cell_column_index_shift = cell_column_index_shift_new_value
