@@ -31,6 +31,8 @@ class Field:
     # максимальное значение сдвига индекса клетки.
     CELL_INDEX_SHIFT_MAX_VALUE = N_CELLS_IN_WIDTH - DISPLAYED_PART_N_CELLS_IN_WIDTH
 
+    LAST_CHOICE_INIT_VALUE = (-1, -1)
+
     # константа сдвига отображаемой области
     # игровго поля на одну клетку вверх.
     SHIFT_DISPLAYED_PART_UP = 0
@@ -72,7 +74,7 @@ class Field:
         else:
             self.__last_choice = last_choice
 
-        self.__n_laid_out_chips = n_laid_out_chips if n_laid_out_chips else 0
+        self.__n_put_up_chips = n_laid_out_chips if n_laid_out_chips else 0
 
         if cell_row_index_shift is None:
             self.reset_cell_row_index_shift()
@@ -97,18 +99,18 @@ class Field:
 
         return Field(self.__content,
                      last_choice_to_copy,
-                     self.__n_laid_out_chips,
+                     self.__n_put_up_chips,
                      self.__cell_row_index_shift,
                      self.__cell_column_index_shift)
 
     @property
-    def n_laid_out_chips(self) -> int:
+    def n_put_up_chips(self) -> int:
         """
-        возвращает значение поля __n_laid_out_chips.
-        :return: значение поля __n_laid_out_chips.
+        возвращает значение поля __n_put_up_chips.
+        :return: значение поля __n_put_up_chips.
         """
 
-        return self.__n_laid_out_chips
+        return self.__n_put_up_chips
 
     @property
     def last_choice(self) -> tuple[int, int]:
@@ -137,7 +139,17 @@ class Field:
         для поля __last_choice.
         """
 
-        self.__last_choice = (-1, -1)
+        self.__last_choice = self.LAST_CHOICE_INIT_VALUE
+
+    def has_last_choice_init_value(self) -> bool:
+        """
+        возвращает значение 'истина', если поле
+        __last_choice имеет значение по умолчанию,
+        в противном случае - 'ложь'.
+        :return: 'истина' или 'ложь'.
+        """
+
+        return self.__last_choice == self.LAST_CHOICE_INIT_VALUE
 
     @property
     def cell_row_index_shift(self) -> int:
@@ -199,7 +211,8 @@ class Field:
 
     def __validate_cell_indexes(
             self,
-            cell_indexes: tuple[int, int]) -> None:
+            cell_indexes: tuple[int, int],
+            is_necessary_to_validate_last_choice: bool = False) -> None:
         """
         производит валидацию входных индексов строки
         и столбца сетки игрового поля.
@@ -207,9 +220,16 @@ class Field:
         клетки игрового поля.
         """
 
-        if cell_indexes[0] < 0 or cell_indexes[0] >= self.N_CELLS_IN_HEIGHT:
+        if is_necessary_to_validate_last_choice:
+            left_border = -1
+        else:
+            left_border = 0
+
+        if (cell_indexes[0] < left_border or
+                cell_indexes[0] >= self.N_CELLS_IN_HEIGHT):
             raise ValueError("invalid value of row_index")
-        elif cell_indexes[1] < 0 or cell_indexes[1] >= self.N_CELLS_IN_WIDTH:
+        elif (cell_indexes[1] < left_border or
+              cell_indexes[1] >= self.N_CELLS_IN_WIDTH):
             raise ValueError("invalid value of column_index")
 
     def place_chip(
@@ -226,7 +246,7 @@ class Field:
         self.__validate_cell_indexes(cell_indexes)
 
         self.__content[cell_indexes[0]][cell_indexes[1]] = chip
-        self.__n_laid_out_chips += 1
+        self.__n_put_up_chips += 1
 
     def remove_chip(self,
                     cell_indexes: tuple[int, int]) -> None:
@@ -239,7 +259,7 @@ class Field:
         self.__validate_cell_indexes(cell_indexes)
 
         self.__content[cell_indexes[0]][cell_indexes[1]] = None
-        self.__n_laid_out_chips -= 1
+        self.__n_put_up_chips -= 1
 
     def get_content_of_cell(
             self,
@@ -252,9 +272,14 @@ class Field:
         :return: содержимое клетки игрового поля.
         """
 
-        self.__validate_cell_indexes(cell_indexes)
+        self.__validate_cell_indexes(
+            cell_indexes,
+            is_necessary_to_validate_last_choice=True)
 
-        return self.__content[cell_indexes[0]][cell_indexes[1]]
+        if cell_indexes == self.LAST_CHOICE_INIT_VALUE:
+            return None
+        else:
+            return self.__content[cell_indexes[0]][cell_indexes[1]]
 
     def has_chip_in_this_cell(
             self,
@@ -280,7 +305,7 @@ class Field:
         :return: 'истина' или 'ложь'.
         """
 
-        return self.__n_laid_out_chips == 1
+        return self.__n_put_up_chips == 1
 
     def has_at_least_one_neighboring_chip_to_this_chip(
             self,
@@ -296,7 +321,7 @@ class Field:
 
         self.__validate_cell_indexes(cell_indexes)
 
-        if self.__n_laid_out_chips == 0:
+        if self.__n_put_up_chips == 0:
             return False
 
         n_neighboring_chips = 0
@@ -329,8 +354,9 @@ class Field:
         :return: 'истина' или 'ложь'.
         """
 
-        return (self.has_only_one_chip() or
-                self.has_at_least_one_neighboring_chip_to_this_chip(self.__last_choice))
+        return (not self.has_last_choice_init_value() and
+                (self.has_only_one_chip() or
+                 self.has_at_least_one_neighboring_chip_to_this_chip(self.__last_choice)))
 
     def shift_displayed_part(self,
                              direction: int) -> None:

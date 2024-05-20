@@ -1,5 +1,6 @@
 from field import Field
 from chip import Chip
+from heap import Heap
 
 import sys
 import enum
@@ -19,17 +20,35 @@ class WindowParameters(enum.IntEnum):
     HEIGHT = CELL_SIZE * Field.DISPLAYED_PART_N_CELLS_IN_HEIGHT
 
 
-# клавиши для сдвига отображаемой части
-# игрового поля
-SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS = (
-    pygame.K_w,
-    pygame.K_s,
-    pygame.K_a,
-    pygame.K_d,
-    pygame.K_UP,
-    pygame.K_DOWN,
-    pygame.K_LEFT,
-    pygame.K_RIGHT)
+# перечисление "константы игры".
+class GameConstants:
+    # черный цвет.
+    BLACK_COLOR = pygame.Color("black")
+
+    # синий цвет для каемки первой выложенной
+    # на игровое поле фишки.
+    BLUE_COLOR_FOR_CHIP_BORDER = pygame.Color("#1E90FF")
+
+    # зеленый цвет для каемки фишки, которую пользователь
+    # хочет выложить на поле и которая прошла валидацию.
+    GREEN_COLOR_FOR_CHIP_BORDER = pygame.Color("green")
+
+    # красный цвет для каемки фишки, которую пользователь
+    # хочет выложить на поле и которая прошла валидацию.
+    RED_COLOR_FOR_CHIP_BORDER = pygame.Color("red")
+
+    # клавиши для сдвига отображаемой части
+    # игрового поля.
+    SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS = (
+        pygame.K_w,
+        pygame.K_s,
+        pygame.K_a,
+        pygame.K_d,
+        pygame.K_UP,
+        pygame.K_DOWN,
+        pygame.K_LEFT,
+        pygame.K_RIGHT)
+
 
 if __name__ == "__main__":
     pygame.init()
@@ -64,65 +83,83 @@ if __name__ == "__main__":
                 cell_row_index = (y // WindowParameters.CELL_SIZE +
                                   field_for_draw.cell_row_index_shift)
 
-                cell_content = field_for_draw.get_content_of_cell(
-                    (cell_row_index, cell_column_index))
+                cell_indexes = (cell_row_index, cell_column_index)
+
+                cell_content = field_for_draw.get_content_of_cell(cell_indexes)
 
                 if isinstance(cell_content, Chip):
                     pygame.draw.rect(screen,
-                                     pygame.Color("black"),
+                                     GameConstants.BLACK_COLOR,
                                      rect,
                                      WindowParameters.CELL_SIZE // 2)
 
                     cell_content.draw_figure(screen, (x, y), WindowParameters.CELL_SIZE)
 
-                    if (cell_row_index, cell_column_index) == field_for_draw.last_choice:
-                        if field_for_draw.n_laid_out_chips == 1:
-                            border_color = pygame.Color("#1E90FF")
+                    if cell_indexes == field_for_draw.last_choice:
+                        if field_for_draw.n_put_up_chips == 1:
+                            chip_border_color = GameConstants.BLUE_COLOR_FOR_CHIP_BORDER
                         elif field_for_draw.has_at_least_one_neighboring_chip_to_this_chip(
-                                (cell_row_index, cell_column_index)):
-                            border_color = pygame.Color("green")
+                                cell_indexes):
+                            chip_border_color = GameConstants.GREEN_COLOR_FOR_CHIP_BORDER
                         else:
-                            border_color = pygame.Color("red")
+                            chip_border_color = GameConstants.RED_COLOR_FOR_CHIP_BORDER
 
-                        pygame.draw.rect(screen, border_color, rect, 2)
+                        pygame.draw.rect(screen, chip_border_color, rect, 2)
                 else:
-                    pygame.draw.rect(screen, pygame.Color("black"), rect, 1)
+                    pygame.draw.rect(screen, GameConstants.BLACK_COLOR, rect, 1)
 
 
-    def handle_click(
+    def get_cell_indexes_by_mouse_pos(
             mouse_pos: tuple[int, int],
-            field_for_edit: Field) -> None:
+            viewed_field: Field) -> tuple[int, int]:
         """
-        обрабатывает событие клика мыши по сетке
-        игрового поля.
+        возвращает индексы строки и столбца клетки
+        игрового поля по позиции мыши в момент клика.
         :param mouse_pos: позиция мыши в окне на
         момент совершения клика;
-        :param field_for_edit: изменяемое игровое
-        поле.
+        :param viewed_field: проcматриваемое игровое
+        поле;
+        :return: индексы строки и столбца клетки
+        игрового поля по позиции мыши.
         """
 
         x, y = mouse_pos
 
         cell_column_index = (x // WindowParameters.CELL_SIZE +
-                             field_for_edit.cell_column_index_shift)
+                             viewed_field.cell_column_index_shift)
 
         cell_row_index = (y // WindowParameters.CELL_SIZE +
-                          field_for_edit.cell_row_index_shift)
+                          viewed_field.cell_row_index_shift)
+
+        return cell_row_index, cell_column_index
+
+
+    def handle_left_click(
+            choice_cell_indexes: tuple[int, int],
+            field_for_edit: Field,
+            chip_for_putting_up: Chip) -> None:
+        """
+        обрабатывает событие клика левой клавишью
+        мыши по сетке игрового поля.
+        :param choice_cell_indexes: индексы строки
+        и столбца клетки изменяемого игрового поля,
+        которую пользователь выбрал для выставления
+        фишки на поле;
+        :param field_for_edit: изменяемое игровое
+        поле;
+        :param chip_for_putting_up: фишка для
+        выставления на поле.
+        """
 
         # помещение фишки в клетку:
-        if not field_for_edit.has_chip_in_this_cell((cell_row_index,
-                                                     cell_column_index)):
-            field_for_edit.place_chip(Chip(Chip.Figures.EIGHT_PT_STAR,
-                                           pygame.Color("orange")),
-                                      (cell_row_index,
-                                       cell_column_index))
+        if not field_for_edit.has_chip_in_this_cell(choice_cell_indexes):
+            field_for_edit.place_chip(chip_for_putting_up, choice_cell_indexes)
 
-        if field_for_edit.last_choice != (-1, -1) and \
-                (cell_row_index, cell_column_index) != field_for_edit.last_choice:
+        if not field_for_edit.has_last_choice_init_value() and \
+                choice_cell_indexes != field_for_edit.last_choice:
             field_for_edit.remove_chip(field_for_edit.last_choice)
 
-        field_for_edit.last_choice = (cell_row_index,
-                                      cell_column_index)
+        field_for_edit.last_choice = choice_cell_indexes
 
 
     def game_cycle() -> None:
@@ -137,7 +174,7 @@ if __name__ == "__main__":
         global field_copy
 
         # звук выложенной на поле фишки.
-        laid_out_sound = pygame.mixer.Sound(
+        chip_was_put_up_sound = pygame.mixer.Sound(
             "resources/sounds/chip_was_put_up.wav")
 
         # звук сдвига отображаемой части игрового поля.
@@ -152,6 +189,10 @@ if __name__ == "__main__":
         # или нет.
         are_sounds_muted = False
 
+        heap = Heap()
+
+        current_chip = None
+
         # основной игровой цикл:
         while True:
             for event in pygame.event.get():
@@ -160,17 +201,30 @@ if __name__ == "__main__":
 
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:
+                    cell_indexes = get_cell_indexes_by_mouse_pos(
+                        pygame.mouse.get_pos(),
+                        field)
+
+                    cell_content = field.get_content_of_cell(cell_indexes)
+
+                    if event.button == 1 and not isinstance(cell_content, Chip):
                         field_copy = field.copy(copy_last_choice=True)
 
-                        handle_click(pygame.mouse.get_pos(), field_copy)
+                        if current_chip is None:
+                            current_chip = heap.give_chip()
+
+                        handle_left_click(cell_indexes, field_copy, current_chip)
 
                         field = field_copy.copy(copy_last_choice=True)
-                    elif event.button == 3 and field.is_correct_last_choice():
+                    elif (event.button == 3 and
+                          field.is_correct_last_choice() and
+                          cell_indexes == field.last_choice):
                         field.reset_last_choice()
 
                         if not are_sounds_muted:
-                            laid_out_sound.play()
+                            chip_was_put_up_sound.play()
+
+                        current_chip = None
                 elif event.type == pygame.KEYDOWN:
                     match event.key:
                         case pygame.K_b:
@@ -183,7 +237,7 @@ if __name__ == "__main__":
                         if event.key == pygame.K_c:
                             field.reset_cell_row_index_shift()
                             field.reset_cell_column_index_shift()
-                        elif event.key in SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS:
+                        elif event.key in GameConstants.SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS:
                             match event.key:
                                 case pygame.K_w | pygame.K_UP:
                                     field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_UP)

@@ -26,6 +26,28 @@ class Chip:
         # восьмиконечная звезда.
         EIGHT_PT_STAR = 5
 
+    # перечисление "цвета фигур, которые
+    # могут быть нарисованы на игровой
+    # фишке".
+    class ColorsOfFigures(enum.StrEnum):
+        # красный.
+        RED = "#E12729"
+
+        # оранжевый.
+        ORANGE = "#F37324"
+
+        # желтый.
+        YELLOW = "#F8CC1B"
+
+        # салатовый.
+        LIGHT_GREEN = "#72B043"
+
+        # хвойный.
+        CONIFERS = "#007F4E"
+
+        # красный.
+        BLUE = "#1844C7"
+
     def __init__(self,
                  figure: int,
                  color_of_figure: pygame.Color) -> None:
