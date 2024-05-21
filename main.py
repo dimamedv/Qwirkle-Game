@@ -232,6 +232,10 @@ if __name__ == "__main__":
                                 not is_shift_of_displayed_part_blocked
                         case pygame.K_m:
                             are_sounds_muted = not are_sounds_muted
+                        case pygame.K_e:
+                            current_chip = heap.make_an_exchange_of_chip(current_chip)
+
+                            field.replace_last_choice_chip(current_chip)
 
                     if is_shift_of_displayed_part_blocked is False:
                         if event.key == pygame.K_c:

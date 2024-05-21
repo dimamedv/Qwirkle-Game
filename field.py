@@ -384,3 +384,14 @@ class Field:
             case self.SHIFT_DISPLAYED_PART_RIGHT:
                 self.cell_column_index_shift += \
                     self.cell_column_index_shift < self.CELL_INDEX_SHIFT_MAX_VALUE
+
+    def replace_last_choice_chip(self,
+                                 new_chip: Chip) -> None:
+        """
+        заменяет фишку, для которой предварительно
+        выбрана клетка на игровом поле, на новую.
+        :param new_chip: новая фишка.
+        """
+
+        if new_chip is not None and not self.has_last_choice_init_value():
+            self.__content[self.__last_choice[0]][self.__last_choice[1]] = new_chip
