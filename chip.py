@@ -66,6 +66,38 @@ class Chip:
 
         self.__color_of_figure = color_of_figure
 
+    @property
+    def figure(self) -> int:
+        """
+        возвращает значение поля __figure.
+        :return: значение поля __figure.
+        """
+
+        return self.__figure
+
+    @property
+    def color_of_figure(self) -> pygame.Color:
+        """
+        возвращает значение поля __color_of_figure.
+        :return: значение поля __color_of_figure.
+        """
+
+        return self.__color_of_figure
+
+    @property
+    def color_of_figure_tuple(self) -> tuple[int, int, int, int]:
+        """
+        возвращает значение поля __color_of_figure.
+        в виде кортежа.
+        :return: значение поля __color_of_figure.
+        в виде кортежа.
+        """
+
+        return (self.__color_of_figure.r,
+                self.__color_of_figure.g,
+                self.__color_of_figure.b,
+                self.__color_of_figure.a)
+
     def draw_figure(self,
                     screen: pygame.Surface,
                     cell_left_corner_coordinates: tuple[int, int],

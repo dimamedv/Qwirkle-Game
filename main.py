@@ -98,8 +98,7 @@ if __name__ == "__main__":
                     if cell_indexes == field_for_draw.last_choice:
                         if field_for_draw.n_put_up_chips == 1:
                             chip_border_color = GameConstants.BLUE_COLOR_FOR_CHIP_BORDER
-                        elif field_for_draw.has_at_least_one_neighboring_chip_to_this_chip(
-                                cell_indexes):
+                        elif field_for_draw.is_last_choice_correct():
                             chip_border_color = GameConstants.GREEN_COLOR_FOR_CHIP_BORDER
                         else:
                             chip_border_color = GameConstants.RED_COLOR_FOR_CHIP_BORDER
@@ -217,7 +216,7 @@ if __name__ == "__main__":
 
                         field = field_copy.copy(copy_last_choice=True)
                     elif (event.button == 3 and
-                          field.is_correct_last_choice() and
+                          field.is_last_choice_correct() and
                           cell_indexes == field.last_choice):
                         field.reset_last_choice()
 

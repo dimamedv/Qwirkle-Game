@@ -49,6 +49,21 @@ class Field:
     # игровго поля на одну клетку вправо.
     SHIFT_DISPLAYED_PART_RIGHT = 3
 
+    # максимальная длина линии из фишек.
+    LINE_OF_CHIPS_MAX_LENGTH = 6
+
+    # вертикальная линия фишек.
+    VERTICAL_LINE_OF_CHIPS = 0
+
+    # горизонтальная линия фишек.
+    HORIZONTAL_LINE_OF_CHIPS = 1
+
+    # константа цикла поиска начала линии.
+    CYCLE_OF_LINE_BEGINNING_SEARCH = 0
+
+    # константа цикла поиска начала линии.
+    CYCLE_OF_LINE_ENDING_SEARCH = 0
+
     def __init__(self,
                  content: list[list[Chip, None]] = None,
                  last_choice: tuple[int, int] = None,
@@ -293,9 +308,11 @@ class Field:
         :return: 'истина' или 'ложь'.
         """
 
-        self.__validate_cell_indexes(cell_indexes)
+        self.__validate_cell_indexes(
+            cell_indexes,
+            is_necessary_to_validate_last_choice=True)
 
-        return self.get_content_of_cell(cell_indexes) is not None
+        return isinstance(self.get_content_of_cell(cell_indexes), Chip)
 
     def has_only_one_chip(self) -> bool:
         """
@@ -307,44 +324,200 @@ class Field:
 
         return self.__n_put_up_chips == 1
 
-    def has_at_least_one_neighboring_chip_to_this_chip(
+    def __is_correct_cell_index_for_chips_line_cycle(
+            self,
+            cell_indexes: tuple[int, int],
+            type_of_chips_line: int,
+            type_of_cycle: int) -> bool:
+        """
+        возвращает значение логического выражения для
+        проверки условия цикла, обрабатывающего линию
+        фишек на игровом поле.
+        :param cell_indexes: индексы строки и столбца
+        рассматриваемой клетки игрового поля.
+        :param type_of_chips_line: тип линии;
+        :param type_of_cycle: тип цикла.
+        :return: 'истина' или 'ложь'.
+        """
+
+        match type_of_chips_line, type_of_cycle:
+            case self.VERTICAL_LINE_OF_CHIPS, self.CYCLE_OF_LINE_BEGINNING_SEARCH:
+                return cell_indexes[0] > 0
+            case self.VERTICAL_LINE_OF_CHIPS, self.CYCLE_OF_LINE_ENDING_SEARCH:
+                return cell_indexes[0] < self.N_CELLS_IN_HEIGHT
+            case self.HORIZONTAL_LINE_OF_CHIPS, self.CYCLE_OF_LINE_BEGINNING_SEARCH:
+                return cell_indexes[1] > 0
+            case self.HORIZONTAL_LINE_OF_CHIPS, self.CYCLE_OF_LINE_ENDING_SEARCH:
+                return cell_indexes[1] < self.N_CELLS_IN_WIDTH
+
+    def __get_cell_indexes_of_chips_line_beginning(
+            self,
+            cell_indexes: tuple[int, int],
+            cell_indexes_deltas: tuple[int, int],
+            type_of_chips_line: int) -> tuple[int, int]:
+        """
+        возвращает индексы строки и столбца клетки игрового
+        поля, с которой начинается линия фишек.
+        :param cell_indexes: индексы строки и столбца клетки
+        игрового поля, с которой начинается поиск начала линии
+        фишек
+        :param cell_indexes_deltas: значения шага изменения
+        индексо строки и столбца клетки для поиска.
+        :param type_of_chips_line: тип линии фишек (вертикальный
+        или горизонтальный).
+        :return: индексы строки и столбца клетки игрового
+        поля, с которой начинается линия фишек.
+        """
+
+        cell_row_index = cell_indexes[0] - cell_indexes_deltas[0]
+        cell_column_index = cell_indexes[1] - cell_indexes_deltas[1]
+
+        line_length = 0
+
+        while (self.__is_correct_cell_index_for_chips_line_cycle(
+                (cell_row_index, cell_column_index),
+                type_of_chips_line,
+                self.CYCLE_OF_LINE_BEGINNING_SEARCH) and
+               self.has_chip_in_this_cell(
+                   (cell_row_index, cell_column_index))):
+            line_length += 1
+
+            if line_length == self.LINE_OF_CHIPS_MAX_LENGTH:
+                return -1, -1
+
+            cell_row_index -= cell_indexes_deltas[0]
+            cell_column_index -= cell_indexes_deltas[1]
+
+        cell_row_index += cell_indexes_deltas[0]
+        cell_column_index += cell_indexes_deltas[1]
+
+        return cell_row_index, cell_column_index
+
+    def __get_parameters_of_processed_line(
+            self,
+            cell_indexes: tuple[int, int],
+            cell_indexes_deltas: tuple[int, int],
+            type_of_chips_line: int) -> tuple[bool, int]:
+        """"""
+
+        this_chip = self.get_content_of_cell(cell_indexes)
+
+        chips_set = set()
+        chips_set.add(this_chip)
+
+        figures_set = set()
+        figures_set.add(this_chip.figure)
+
+        colors_of_figures_set = set()
+        colors_of_figures_set.add(this_chip.color_of_figure_tuple)
+
+        cell_row_index = cell_indexes[0]
+        cell_column_index = cell_indexes[1]
+
+        line_length = 0
+
+        while (self.__is_correct_cell_index_for_chips_line_cycle(
+                (cell_row_index, cell_column_index),
+                type_of_chips_line,
+                self.CYCLE_OF_LINE_ENDING_SEARCH) and
+               self.has_chip_in_this_cell(
+                   (cell_row_index, cell_column_index))):
+            line_length += 1
+
+            if line_length > self.LINE_OF_CHIPS_MAX_LENGTH:
+                return False, -1
+
+            chip = self.get_content_of_cell((cell_row_index,
+                                             cell_column_index))
+
+            chips_set.add(chip)
+
+            figures_set.add(chip.figure)
+            colors_of_figures_set.add(chip.color_of_figure_tuple)
+
+            cell_row_index += cell_indexes_deltas[0]
+            cell_column_index += cell_indexes_deltas[1]
+
+        if (line_length == 1 or
+                (len(chips_set) == line_length and
+                 (len(figures_set) == 1) != (len(colors_of_figures_set) == 1))):
+            return True, line_length
+        else:
+            return False, line_length
+
+    def __will_line_correct_with_this_chip(
+            self,
+            cell_indexes: tuple[int, int],
+            type_of_chips_line: int) -> tuple[bool, int]:
+        """
+        возвращает значение 'истина', если линия
+        (вертикальная или горизонтальная) будет
+        корректной с точки зрения правил игры
+        с добавлением рассматриваемой фишки,
+        в противном случае - 'ложь'.
+        :param cell_indexes: индексы строки и
+        столбца клетки игрового поля рассматриваемой
+        фишки.
+        :param type_of_chips_line: тип линии фишек
+        (горизонтальная или вертикальная);
+        :return: 'истина' или 'ложь'.
+        """
+
+        cell_row_index_delta = 0
+        cell_column_index_delta = 0
+
+        match type_of_chips_line:
+            case self.VERTICAL_LINE_OF_CHIPS:
+                cell_row_index_delta = 1
+            case self.HORIZONTAL_LINE_OF_CHIPS:
+                cell_column_index_delta = 1
+
+        cell_indexes_deltas = (cell_row_index_delta, cell_column_index_delta)
+
+        current_cell_indexes = \
+            self.__get_cell_indexes_of_chips_line_beginning(
+                cell_indexes,
+                cell_indexes_deltas,
+                type_of_chips_line)
+
+        if current_cell_indexes == self.LAST_CHOICE_INIT_VALUE:
+            return False, -1
+
+        return self.__get_parameters_of_processed_line(
+            current_cell_indexes,
+            cell_indexes_deltas,
+            type_of_chips_line)
+
+    def __is_last_choice_correct_in_the_context_of_chips_lines(
             self,
             cell_indexes: tuple[int, int]) -> bool:
         """
-        возвращает значение 'истина', если на игровом поле
-        расположена фишка, являющееся соседней к рассматриваемой
-        (соседная фишка, фишка расположенная выше, ниже, левее
-        или правее рассматриваемой)
+        возвращает значение 'истина', если выбор пользователем
+        клетки поля для размещения фишки является корректным
+        в разрезе линий фишек, в противном случае - 'ложь'.
         :param cell_indexes: индексы строки и столбца
         клетки игрового поля.
         """
 
         self.__validate_cell_indexes(cell_indexes)
 
-        if self.__n_put_up_chips == 0:
-            return False
+        (will_vertical_line_correct,
+         vertical_line_new_length) = \
+            self.__will_line_correct_with_this_chip(
+                cell_indexes,
+                self.VERTICAL_LINE_OF_CHIPS)
 
-        n_neighboring_chips = 0
+        (will_horizontal_line_correct,
+         horizontal_line_new_length) = \
+            self.__will_line_correct_with_this_chip(
+                cell_indexes,
+                self.HORIZONTAL_LINE_OF_CHIPS)
 
-        if cell_indexes[0] > 0:
-            n_neighboring_chips += self.has_chip_in_this_cell(
-                (cell_indexes[0] - 1, cell_indexes[1]))
+        return (will_vertical_line_correct and
+                will_horizontal_line_correct and
+                (vertical_line_new_length + horizontal_line_new_length) > 2)
 
-        if cell_indexes[1] > 0:
-            n_neighboring_chips += self.has_chip_in_this_cell(
-                (cell_indexes[0], cell_indexes[1] - 1))
-
-        if cell_indexes[0] < self.N_CELLS_IN_HEIGHT:
-            n_neighboring_chips += self.has_chip_in_this_cell(
-                (cell_indexes[0] + 1, cell_indexes[1]))
-
-        if cell_indexes[1] < self.N_CELLS_IN_WIDTH:
-            n_neighboring_chips += self.has_chip_in_this_cell(
-                (cell_indexes[0], cell_indexes[1] + 1))
-
-        return n_neighboring_chips != 0
-
-    def is_correct_last_choice(self) -> bool:
+    def is_last_choice_correct(self) -> bool:
         """
         возвращает значение 'истина', если
         выбор пользователем клетки поля для
@@ -354,9 +527,11 @@ class Field:
         :return: 'истина' или 'ложь'.
         """
 
-        return (not self.has_last_choice_init_value() and
-                (self.has_only_one_chip() or
-                 self.has_at_least_one_neighboring_chip_to_this_chip(self.__last_choice)))
+        return \
+            (not self.has_last_choice_init_value() and
+             (self.has_only_one_chip() or
+              self.__is_last_choice_correct_in_the_context_of_chips_lines(
+                  self.__last_choice)))
 
     def shift_displayed_part(self,
                              direction: int) -> None:
