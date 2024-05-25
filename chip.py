@@ -1,5 +1,37 @@
 import enum
 import pygame
+import math
+
+
+def get_rotated_point_coordinates(
+        point_coordinates: tuple[int, int],
+        center_coordinates: tuple[int, int],
+        angle_in_radians: float) -> tuple[float, float]:
+    """
+    возвращает координаты точки, повернутой на угол
+    вокруг центральной точки.
+    :param point_coordinates: координаты точки;
+    :param center_coordinates: координаты центральной точки;
+    :param angle_in_radians: угол поворота в радианах.
+    :return: координаты точки, повернутой на угол вокруг
+    центральной точки.
+    """
+
+    x, y = point_coordinates
+    cx, cy = center_coordinates
+
+    x -= cx
+    y -= cy
+
+    new_x = (x * math.cos(angle_in_radians) -
+             y * math.sin(angle_in_radians) +
+             cx)
+
+    new_y = (x * math.sin(angle_in_radians) +
+             y * math.cos(angle_in_radians) +
+             cy)
+
+    return new_x, new_y
 
 
 # класс "фишка".
@@ -46,7 +78,7 @@ class Chip:
         CONIFERS = "#007F4E"
 
         # красный.
-        BLUE = "#1844C7"
+        BLUE = "#1E90FF"
 
     def __init__(self,
                  figure: int,
@@ -113,13 +145,16 @@ class Chip:
         :param cell_size: размер клетки;
         """
 
+        cell_center_coordinates = \
+            (cell_left_corner_coordinates[0] + cell_size // 2,
+             cell_left_corner_coordinates[1] + cell_size // 2)
+
         match self.__figure:
             case self.Figures.CIRCLE:
                 pygame.draw.circle(
                     screen,
                     self.__color_of_figure,
-                    (cell_left_corner_coordinates[0] + cell_size // 2,
-                     cell_left_corner_coordinates[1] + cell_size // 2),
+                    cell_center_coordinates,
                     cell_size // 3)
             case self.Figures.SQUARE:
                 rect = pygame.Rect(
@@ -172,8 +207,7 @@ class Chip:
                 pygame.draw.circle(
                     screen,
                     self.__color_of_figure,
-                    (cell_left_corner_coordinates[0] + cell_size // 2,
-                     cell_left_corner_coordinates[1] + cell_size // 2),
+                    cell_center_coordinates,
                     cell_size // 8)
             case self.Figures.FOUR_PT_STAR:
                 points = [(cell_left_corner_coordinates[0] + cell_size // 6,
@@ -214,21 +248,11 @@ class Chip:
 
                 pygame.draw.polygon(screen, self.__color_of_figure, points_1, 0)
 
-                points_2 = [(cell_left_corner_coordinates[0] + 11 * cell_size // 42,
-                             cell_left_corner_coordinates[1] + 11 * cell_size // 42),
-                            (cell_left_corner_coordinates[0] + cell_size // 2,
-                             cell_left_corner_coordinates[1] + 15.5 * cell_size // 42),
-                            (cell_left_corner_coordinates[0] + 31 * cell_size // 42,
-                             cell_left_corner_coordinates[1] + 11 * cell_size // 42),
-                            (cell_left_corner_coordinates[0] + 26.5 * cell_size // 42,
-                             cell_left_corner_coordinates[1] + cell_size // 2),
-                            (cell_left_corner_coordinates[0] + 31 * cell_size // 42,
-                             cell_left_corner_coordinates[1] + 31 * cell_size // 42),
-                            (cell_left_corner_coordinates[0] + cell_size // 2,
-                             cell_left_corner_coordinates[1] + 26.5 * cell_size // 42),
-                            (cell_left_corner_coordinates[0] + 11 * cell_size // 42,
-                             cell_left_corner_coordinates[1] + 31 * cell_size // 42),
-                            (cell_left_corner_coordinates[0] + 15.5 * cell_size // 42,
-                             cell_left_corner_coordinates[1] + cell_size // 2)]
+                points_2 = \
+                    [get_rotated_point_coordinates(
+                        p,
+                        cell_center_coordinates,
+                        math.radians(45))
+                        for p in points_1]
 
                 pygame.draw.polygon(screen, self.__color_of_figure, points_2, 0)

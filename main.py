@@ -80,6 +80,16 @@ class WindowParameters(enum.IntEnum):
     # высота колоды.
     DECK_HEIGHT = CELL_SIZE
 
+    # толщина границы клетки.
+    CELL_BORDER_SIZE = 1
+
+    # толщина контура прямоугольника
+    # для заливки фишки чёрным цветом.
+    BACKGROUND_FILL_CHIP_BORDER_SIZE = HALF_OF_CELL_SIZE
+
+    # толщина каёмки текущей фишки.
+    CURRENT_CHIP_BORDER_SIZE = 3
+
 
 # перечисление "константы игры".
 class GameConstants:
@@ -183,7 +193,7 @@ if __name__ == "__main__":
                         screen,
                         GameConstants.BLACK_COLOR,
                         rect,
-                        WindowParameters.CELL_SIZE // 2)
+                        WindowParameters.BACKGROUND_FILL_CHIP_BORDER_SIZE)
 
                     cell_content.draw_figure(
                         screen,
@@ -205,7 +215,7 @@ if __name__ == "__main__":
                             screen,
                             chip_border_color,
                             rect,
-                            2)
+                            WindowParameters.CURRENT_CHIP_BORDER_SIZE)
                 else:
                     pygame.draw.rect(
                         screen,
@@ -243,7 +253,7 @@ if __name__ == "__main__":
                     screen,
                     GameConstants.BLACK_COLOR,
                     rect,
-                    WindowParameters.CELL_SIZE // 2)
+                    WindowParameters.BACKGROUND_FILL_CHIP_BORDER_SIZE)
 
                 chip.draw_figure(screen, (x, y), WindowParameters.CELL_SIZE)
 
@@ -252,13 +262,13 @@ if __name__ == "__main__":
                         screen,
                         GameConstants.PURPLE_COLOR_FOR_CHOSEN_DECK_CHIP,
                         rect,
-                        2)
+                        WindowParameters.CURRENT_CHIP_BORDER_SIZE)
             else:
                 pygame.draw.rect(
                     screen,
                     GameConstants.BLACK_COLOR,
                     rect,
-                    1)
+                    WindowParameters.CELL_BORDER_SIZE)
 
             chip_index += 1
 
