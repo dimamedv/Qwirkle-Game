@@ -9,6 +9,8 @@ from heap import Heap
 from chip import Chip
 from settings import WindowParameters, GameConstants
 
+HEADER_SIZE = 10
+
 class GameClient:
     def __init__(self, host='localhost', port=12345):
         self.host = host
@@ -18,6 +20,7 @@ class GameClient:
         self.deck = Deck(Heap().give_chips(Deck.N_CHIPS_MAX_VALUE))
         self.current_chip = None
         self.current_chip_index = -1
+        self.temp_field = self.field.copy()
 
     def start(self):
         self.client_socket.connect((self.host, self.port))
@@ -27,10 +30,22 @@ class GameClient:
     def receive_messages(self):
         while True:
             try:
-                message = self.client_socket.recv(4096)
-                if not message:
-                    break
-                self.handle_message(message)
+                full_message = b""
+                new_msg = True
+                while True:
+                    msg = self.client_socket.recv(16)
+                    if new_msg:
+                        print(f"New message length: {msg[:HEADER_SIZE].decode()}")
+                        msg_len = int(msg[:HEADER_SIZE])
+                        new_msg = False
+
+                    full_message += msg
+
+                    if len(full_message) - HEADER_SIZE == msg_len:
+                        print("Full message received")
+                        self.handle_message(full_message[HEADER_SIZE:])
+                        new_msg = True
+                        full_message = b""
             except ConnectionResetError:
                 break
 
@@ -46,6 +61,8 @@ class GameClient:
             self.deck = data['deck']
 
     def send_message(self, message):
+        message = pickle.dumps(message)
+        message = bytes(f"{len(message):<{HEADER_SIZE}}", 'utf-8') + message
         self.client_socket.sendall(message)
 
     def draw_field(self, field_for_draw: Field) -> None:
@@ -155,6 +172,7 @@ class GameClient:
 
         self.current_chip = None
         self.current_chip_index = -1
+        self.temp_field = self.field.copy()
 
         exchanged_chips_indexes = []
 
@@ -165,25 +183,24 @@ class GameClient:
                     self.client_socket.close()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and self.is_mouse_on_the_field(pygame.mouse.get_pos()):
-                    cell_indexes = self.get_cell_indexes_by_mouse_pos(pygame.mouse.get_pos(), self.field)
+                    cell_indexes = self.get_cell_indexes_by_mouse_pos(pygame.mouse.get_pos(), self.temp_field)
                     print(f"Mouse clicked at {pygame.mouse.get_pos()}, cell indexes: {cell_indexes}")
                     if event.button == 1 and self.current_chip is not None:
-                        self.field_copy = self.field.copy(copy_last_choice=True)
-                        deck.remove_chip(self.current_chip_index)
-                        self.handle_left_click(cell_indexes, self.field_copy, self.current_chip)
-                        self.field = self.field_copy.copy(copy_last_choice=True)
-                        message = pickle.dumps({
+                        self.handle_left_click(cell_indexes, self.temp_field, self.current_chip)
+                    elif event.button == 3 and self.temp_field.is_last_choice_correct() and cell_indexes == self.temp_field.last_choice:
+                        message = {
                             'type': 'move',
                             'chip': self.current_chip,
                             'cell_indexes': cell_indexes
-                        })
+                        }
                         self.send_message(message)
-                    elif event.button == 3 and self.field.is_last_choice_correct() and cell_indexes == self.field.last_choice:
-                        self.field.reset_last_choice()
                         if not are_sounds_muted:
                             chip_was_put_up_sound.play()
+                        self.field = self.temp_field.copy()
                         self.current_chip = None
                         self.current_chip_index = -1
+                        # Очистка временного поля
+                        self.temp_field = self.field.copy()
                 elif event.type == pygame.KEYDOWN:
                     if event.key in GameConstants.SIMPLE_ACTIONS_KEYS:
                         match event.key:
@@ -222,10 +239,9 @@ class GameClient:
                             shift_of_displayed_part_of_field_sound.play()
 
             screen.fill(pygame.Color("white"))
-            self.draw_field(self.field)
+            self.draw_field(self.temp_field)
             self.draw_deck(deck, self.current_chip_index)
             pygame.display.flip()
-
 
 if __name__ == "__main__":
     client = GameClient()
