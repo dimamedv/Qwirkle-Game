@@ -18,6 +18,16 @@ class GameClient:
         self.deck = Deck(Heap().give_chips(Deck.N_CHIPS_MAX_VALUE))
         self.current_chip = None
         self.current_chip_index = -1
+        self.are_sounds_muted = False
+        self.is_shift_of_displayed_part_blocked = False
+        self.exchanged_chips_indexes = []
+
+        # Инициализация Pygame и микшера перед загрузкой звуков
+        pygame.init()
+        pygame.mixer.init()
+
+        self.chip_was_put_up_sound = pygame.mixer.Sound("resources/sounds/chip_was_put_up.wav")
+        self.shift_of_displayed_part_of_field_sound = pygame.mixer.Sound("resources/sounds/shift_of_displayed_part_of_field.wav")
 
     def start(self):
         self.client_socket.connect((self.host, self.port))
@@ -25,27 +35,32 @@ class GameClient:
         self.game_cycle()
 
     def receive_messages(self):
+        buffer = b''
         while True:
             try:
                 message = self.client_socket.recv(4096)
                 if not message:
                     break
-                self.handle_message(message)
+                buffer += message
+                while True:
+                    if len(buffer) < 4:
+                        break
+                    msg_len = int.from_bytes(buffer[:4], 'big')
+                    if len(buffer) < 4 + msg_len:
+                        break
+                    message = buffer[4:4 + msg_len]
+                    buffer = buffer[4 + msg_len:]
+                    self.handle_message(message)
             except ConnectionResetError:
                 break
 
     def handle_message(self, message):
         data = pickle.loads(message)
         if data['type'] == 'update':
-            print("Received update from server.")
             self.field = data['field']
-            self.deck = data['deck']
-        elif data['type'] == 'new_turn':
-            print("New turn received.")
-            self.field = data['field']
-            self.deck = data['deck']
 
     def send_message(self, message):
+        message = len(message).to_bytes(4, 'big') + message
         self.client_socket.sendall(message)
 
     def draw_field(self, field_for_draw: Field) -> None:
@@ -118,17 +133,16 @@ class GameClient:
         cell_row_index = (y - WindowParameters.DISPLAYED_PART_OF_FIELD_MIN_Y) // WindowParameters.CELL_SIZE + viewed_field.cell_row_index_shift
         return cell_row_index, cell_column_index
 
-    def handle_left_click(self, choice_cell_indexes: tuple[int, int], field_for_edit: Field, chip_for_putting_up: Chip) -> None:
+    def handle_left_click(self, choice_cell_indexes: tuple[int, int], field_for_edit: Field, chip_for_putting_up: Chip) -> bool:
         if not field_for_edit.has_chip_in_this_cell(choice_cell_indexes):
-            print(f"Placing chip at {choice_cell_indexes}")
             field_for_edit.place_chip(chip_for_putting_up, choice_cell_indexes)
-        else:
-            print(f"Cell {choice_cell_indexes} already occupied")
-
-        if not field_for_edit.has_last_choice_init_value() and choice_cell_indexes != field_for_edit.last_choice:
-            field_for_edit.remove_chip(field_for_edit.last_choice)
-
-        field_for_edit.last_choice = choice_cell_indexes
+            field_for_edit.last_choice = choice_cell_indexes
+            if field_for_edit.is_last_choice_correct():
+                return True
+            else:
+                field_for_edit.remove_chip(choice_cell_indexes)
+                field_for_edit.reset_last_choice()
+        return False
 
     def return_chip_back_to_the_deck(self, chip: Chip, chip_index: int, field: Field, deck: Deck) -> None:
         deck.place_chip(chip, chip_index)
@@ -137,26 +151,25 @@ class GameClient:
             field.remove_chip(field.last_choice)
             field.reset_last_choice()
 
-    def game_cycle(self) -> None:
-        global screen
-
-        pygame.init()
-        screen = pygame.display.set_mode((WindowParameters.WIDTH, WindowParameters.HEIGHT))
-        pygame.display.set_caption("Квиркл")
-
-        chip_was_put_up_sound = pygame.mixer.Sound("resources/sounds/chip_was_put_up.wav")
-        shift_of_displayed_part_of_field_sound = pygame.mixer.Sound("resources/sounds/shift_of_displayed_part_of_field.wav")
-
-        is_shift_of_displayed_part_blocked = False
-        are_sounds_muted = False
-
-        heap = Heap()
-        deck = Deck(heap.give_chips(Deck.N_CHIPS_MAX_VALUE))
-
+    def confirm_move(self):
+        if not self.are_sounds_muted:
+            self.chip_was_put_up_sound.play()
+        message = pickle.dumps({
+            'type': 'move',
+            'chip': self.current_chip,
+            'cell_indexes': self.field.last_choice
+        })
+        self.send_message(message)
         self.current_chip = None
         self.current_chip_index = -1
 
-        exchanged_chips_indexes = []
+    def game_cycle(self) -> None:
+        global screen
+
+        screen = pygame.display.set_mode((WindowParameters.WIDTH, WindowParameters.HEIGHT))
+        pygame.display.set_caption("Квиркл")
+
+        heap = Heap()
 
         while True:
             for event in pygame.event.get():
@@ -166,46 +179,41 @@ class GameClient:
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and self.is_mouse_on_the_field(pygame.mouse.get_pos()):
                     cell_indexes = self.get_cell_indexes_by_mouse_pos(pygame.mouse.get_pos(), self.field)
-                    print(f"Mouse clicked at {pygame.mouse.get_pos()}, cell indexes: {cell_indexes}")
-                    if event.button == 1 and self.current_chip is not None:
+                    cell_content = self.field.get_content_of_cell(cell_indexes)
+
+                    if event.button == 1 and not isinstance(cell_content, Chip) and self.current_chip is not None:
                         self.field_copy = self.field.copy(copy_last_choice=True)
-                        deck.remove_chip(self.current_chip_index)
-                        self.handle_left_click(cell_indexes, self.field_copy, self.current_chip)
-                        self.field = self.field_copy.copy(copy_last_choice=True)
-                        message = pickle.dumps({
-                            'type': 'move',
-                            'chip': self.current_chip,
-                            'cell_indexes': cell_indexes
-                        })
-                        self.send_message(message)
+                        if self.handle_left_click(cell_indexes, self.field_copy, self.current_chip):
+                            self.deck.remove_chip(self.current_chip_index)
+                            self.field = self.field_copy.copy(copy_last_choice=True)
+                            self.confirm_move()
                     elif event.button == 3 and self.field.is_last_choice_correct() and cell_indexes == self.field.last_choice:
                         self.field.reset_last_choice()
-                        if not are_sounds_muted:
-                            chip_was_put_up_sound.play()
+                        if not self.are_sounds_muted:
+                            self.chip_was_put_up_sound.play()
                         self.current_chip = None
                         self.current_chip_index = -1
                 elif event.type == pygame.KEYDOWN:
                     if event.key in GameConstants.SIMPLE_ACTIONS_KEYS:
                         match event.key:
                             case pygame.K_b:
-                                is_shift_of_displayed_part_blocked = not is_shift_of_displayed_part_blocked
+                                self.is_shift_of_displayed_part_blocked = not self.is_shift_of_displayed_part_blocked
                             case pygame.K_m:
-                                are_sounds_muted = not are_sounds_muted
+                                self.are_sounds_muted = not self.are_sounds_muted
                             case pygame.K_e:
-                                if self.current_chip_index not in exchanged_chips_indexes and self.current_chip is not None:
-                                    exchanged_chips_indexes.append(self.current_chip_index)
+                                if self.current_chip_index not in self.exchanged_chips_indexes and self.current_chip is not None:
+                                    self.exchanged_chips_indexes.append(self.current_chip_index)
                                     self.current_chip = heap.make_an_exchange_of_chips([self.current_chip])[0]
-                                    self.return_chip_back_to_the_deck(self.current_chip, self.current_chip_index, self.field, deck)
+                                    self.return_chip_back_to_the_deck(self.current_chip, self.current_chip_index, self.field, self.deck)
                     elif event.key in GameConstants.CHOICE_OF_DECK_CHIP_KEYS:
                         chip_index = GameConstants.CHOICE_OF_DECK_CHIP_KEYS.index(event.key)
-                        chip = deck.chip(chip_index)
+                        chip = self.deck.chip(chip_index)
                         if chip is not None:
-                            print(f"Chip {chip} selected from deck.")
                             if self.current_chip is not None and chip_index != self.current_chip_index:
-                                self.return_chip_back_to_the_deck(self.current_chip, self.current_chip_index, self.field, deck)
+                                self.return_chip_back_to_the_deck(self.current_chip, self.current_chip_index, self.field, self.deck)
                             self.current_chip = chip
                             self.current_chip_index = chip_index
-                    elif is_shift_of_displayed_part_blocked is False and event.key in GameConstants.SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS:
+                    elif not self.is_shift_of_displayed_part_blocked and event.key in GameConstants.SHIFT_OF_DISPLAYED_PART_OF_FIELD_KEYS:
                         match event.key:
                             case pygame.K_w | pygame.K_UP:
                                 self.field.shift_displayed_part(Field.SHIFT_DISPLAYED_PART_UP)
@@ -218,14 +226,13 @@ class GameClient:
                             case pygame.K_c:
                                 self.field.reset_cell_row_index_shift()
                                 self.field.reset_cell_column_index_shift()
-                        if not are_sounds_muted:
-                            shift_of_displayed_part_of_field_sound.play()
+                        if not self.are_sounds_muted:
+                            self.shift_of_displayed_part_of_field_sound.play()
 
             screen.fill(pygame.Color("white"))
             self.draw_field(self.field)
-            self.draw_deck(deck, self.current_chip_index)
+            self.draw_deck(self.deck, self.current_chip_index)
             pygame.display.flip()
-
 
 if __name__ == "__main__":
     client = GameClient()
