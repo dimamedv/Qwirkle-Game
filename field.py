@@ -3,65 +3,43 @@ from chip import Chip
 
 # класс "игровое поле".
 class Field:
-    # количество клеток в ширину у отображаемой
-    # на экране части сетки игрового поля.
     DISPLAYED_PART_N_CELLS_IN_WIDTH = 15
 
-    # количество клеток в ширину у отображаемой
-    # на экране части сетки игрового поля.
     DISPLAYED_PART_N_CELLS_IN_HEIGHT = DISPLAYED_PART_N_CELLS_IN_WIDTH
 
-    # максимальное количество выложенных
-    # на игровое поле фишек.
     N_LAID_OUT_CHIPS_MAX_VALUE = 108
 
-    # количество клеток в ширину у сетки игрового поля.
-    N_CELLS_IN_WIDTH = (2 * (N_LAID_OUT_CHIPS_MAX_VALUE - 1) +
-                        DISPLAYED_PART_N_CELLS_IN_WIDTH)
+    N_CELLS_IN_WIDTH = \
+        (2 * (N_LAID_OUT_CHIPS_MAX_VALUE - 1) +
+         DISPLAYED_PART_N_CELLS_IN_WIDTH)
 
-    # количество клеток в ширину у сетки игрового поля.
     N_CELLS_IN_HEIGHT = N_CELLS_IN_WIDTH
 
-    # сдвиг индекса строки клетки по умолчанию.
     CELL_ROW_INDEX_SHIFT_INIT_VALUE = 107
 
-    # сдвиг индекса столбца клетки по умолчанию.
-    CELL_COLUMN_INDEX_SHIFT_INIT_VALUE = CELL_ROW_INDEX_SHIFT_INIT_VALUE
+    CELL_COLUMN_INDEX_SHIFT_INIT_VALUE = \
+        CELL_ROW_INDEX_SHIFT_INIT_VALUE
 
-    # максимальное значение сдвига индекса клетки.
     CELL_INDEX_SHIFT_MAX_VALUE = N_CELLS_IN_WIDTH - DISPLAYED_PART_N_CELLS_IN_WIDTH
 
     LAST_CHOICE_INIT_VALUE = (-1, -1)
 
-    # константа сдвига отображаемой области
-    # игровго поля на одну клетку вверх.
     SHIFT_DISPLAYED_PART_UP = 0
 
-    # константа сдвига отображаемой области
-    # игровго поля на одну клетку вниз.
     SHIFT_DISPLAYED_PART_DOWN = 1
 
-    # константа сдвига отображаемой области
-    # игровго поля на одну клетку влево.
     SHIFT_DISPLAYED_PART_LEFT = 2
 
-    # константа сдвига отображаемой области
-    # игровго поля на одну клетку вправо.
     SHIFT_DISPLAYED_PART_RIGHT = 3
 
-    # максимальная длина линии из фишек.
     LINE_OF_CHIPS_MAX_LENGTH = 6
 
-    # вертикальная линия фишек.
     VERTICAL_LINE_OF_CHIPS = 0
 
-    # горизонтальная линия фишек.
     HORIZONTAL_LINE_OF_CHIPS = 1
 
-    # константа цикла поиска начала линии.
     CYCLE_OF_LINE_BEGINNING_SEARCH = 0
 
-    # константа цикла поиска начала линии.
     CYCLE_OF_LINE_ENDING_SEARCH = 0
 
     def __init__(self,

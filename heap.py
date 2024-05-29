@@ -1,3 +1,5 @@
+from validators import *
+
 from chip import Chip
 from deck import Deck
 
@@ -8,12 +10,14 @@ from random import shuffle, randint
 
 # класс "куча (набор фишек)".
 class Heap:
+    GIVE_CHIPS_PARAMETER_MIN_VALUE = 1
+
     def __init__(self):
         """
         конструктор класса.
         """
 
-        self.content = []
+        self.__content = []
 
         colors_of_figure = (
             pygame.Color(Chip.ColorsOfFigures.RED),
@@ -27,63 +31,79 @@ class Heap:
             for color_of_figure in colors_of_figure:
                 chip = Chip(figure, color_of_figure)
 
-                self.content.append(chip)
-                self.content.append(chip)
-                self.content.append(chip)
+                self.__content.append(chip)
+                self.__content.append(chip)
+                self.__content.append(chip)
 
-        shuffle(self.content)
+        shuffle(self.__content)
 
-    def __is_empty(self) -> bool:
+    def is_empty(self) -> bool:
         """
         возвращает значение 'истина', если "куча"
         пуста, в противном случае - 'ложь'.
         :return: 'истина' или 'ложь'.
         """
 
-        return len(self.content) == 0
+        return len(self.__content) == 0
 
-    def give_chips(self, n_chips: int) -> [list[Chip], None]:
+    def n_chips(self) -> int:
         """
-        выдаёт фишки из "кучи", если она не пуста
-        :param n_chips: количество выдаваемых фишек.
-        :return: колода карт из "кучи".
+        возвращает количество фишек в "куче".
+        :return: количество фишек в "куче".
         """
 
-        if n_chips < 0 or n_chips > Deck.N_CHIPS_MAX_VALUE:
-            raise ValueError("invalid value of n_chips")
+        return len(self.__content)
 
-        if not self.__is_empty() and len(self.content) >= n_chips:
-            chips = []
+    def give_chips(self, n_chips: int) -> list[Chip] | None:
+        """
+        выдаёт фишки из "кучи", если она не пуста.
+        :param n_chips: количество запрашиваемых
+        фишек.
+        :return: фишки из "кучи" или None.
+        """
 
-            for i in range(n_chips):
-                chip_index = randint(0, len(self.content) - 1)
+        validate_int_value(
+            n_chips,
+            (self.GIVE_CHIPS_PARAMETER_MIN_VALUE,
+             Deck.N_CHIPS_MAX_VALUE))
 
-                chip = self.content[chip_index]
+        if not self.is_empty():
+            given_chips = []
 
-                self.content.pop(chip_index)
+            n_given_chips = min(n_chips, len(self.__content))
 
-                chips.append(chip)
+            for i in range(n_given_chips):
+                given_chip_index = randint(0, len(self.__content) - 1)
 
-            shuffle(chips)
+                given_chip = self.__content[given_chip_index]
 
-            return chips
+                self.__content.pop(given_chip_index)
+
+                given_chips.append(given_chip)
+
+            shuffle(given_chips)
+
+            return given_chips
         else:
             return None
 
-    def __return_chips(self,
-                       returned_chips: list[Chip]) -> None:
+    def return_chips(
+            self,
+            returned_chips: list[Chip]) -> None:
         """
         возвращает фишки в "кучу".
         :param returned_chips: возвращаемые в "кучу" фишки.
         """
 
-        self.content.append(returned_chips)
+        validate_container_elements_type(returned_chips, Chip)
 
-        shuffle(self.content)
+        self.__content += returned_chips
+
+        shuffle(self.__content)
 
     def make_an_exchange_of_chips(
             self,
-            returned_chips: list[Chip]) -> [list[Chip], None]:
+            returned_chips: list[Chip]) -> list[Chip] | Chip | None:
         """
         производит обмен фишек, выдавая новые взамен возвращаемых
         (если "куча" пуста, обмен не производится, возвращается
@@ -94,11 +114,19 @@ class Heap:
         или None.
         """
 
-        if not self.__is_empty():
+        validate_container_elements_type(returned_chips, Chip)
+
+        if not self.is_empty():
             new_chips = self.give_chips(len(returned_chips))
 
-            self.__return_chips(returned_chips)
+            while len(new_chips) < len(returned_chips):
+                returned_chips.pop(-1)
 
-            return new_chips
+            self.return_chips(returned_chips)
+
+            if len(new_chips) == 1:
+                return new_chips[0]
+            else:
+                return new_chips
         else:
-            return None
+            return returned_chips

@@ -1,3 +1,5 @@
+from validators import *
+
 import enum
 import pygame
 import math
@@ -8,8 +10,8 @@ def get_rotated_point_coordinates(
         center_coordinates: tuple[int, int],
         angle_in_radians: float) -> tuple[float, float]:
     """
-    возвращает координаты точки, повернутой на угол
-    вокруг центральной точки.
+    возвращает координаты точки, повернутой на угол вокруг
+    центральной точки.
     :param point_coordinates: координаты точки;
     :param center_coordinates: координаты центральной точки;
     :param angle_in_radians: угол поворота в радианах.
@@ -36,48 +38,38 @@ def get_rotated_point_coordinates(
 
 # класс "фишка".
 class Chip:
+    CELL_SIZE_MIN_VALUE = 1
+
     # перечисление "фигуры, которые
     # могут быть нарисованы на игровой
     # фишке".
     class Figures(enum.IntEnum):
-        # круг;
         CIRCLE = 0
 
-        # квадрат;
         SQUARE = 1
 
-        # ромб;
         DIAMOND = 2
 
-        # клевер;
         CLEVER = 3
 
-        # четырёхконечная звезда;
         FOUR_PT_STAR = 4
 
-        # восьмиконечная звезда.
         EIGHT_PT_STAR = 5
 
     # перечисление "цвета фигур, которые
     # могут быть нарисованы на игровой
     # фишке".
     class ColorsOfFigures(enum.StrEnum):
-        # красный.
         RED = "#E12729"
 
-        # оранжевый.
         ORANGE = "#F37324"
 
-        # желтый.
         YELLOW = "#F8CC1B"
 
-        # салатовый.
         LIGHT_GREEN = "#72B043"
 
-        # хвойный.
         CONIFERS = "#007F4E"
 
-        # красный.
         BLUE = "#1E90FF"
 
     def __init__(self,
@@ -89,10 +81,11 @@ class Chip:
         :param color_of_figure: цвет фигуры.
         """
 
-        if figure not in [figure.value for figure in self.Figures]:
-            raise ValueError("there is no such figure in the game.")
-        elif not isinstance(color_of_figure, pygame.Color):
-            raise ValueError("color_of_figure is not instance of pygame.Color")
+        validate_presence_in_container(
+            figure,
+            [figure.value for figure in self.Figures])
+
+        validate_object_type(color_of_figure, pygame.Color)
 
         self.__figure = figure
 
@@ -144,6 +137,10 @@ class Chip:
         поместить фишку;
         :param cell_size: размер клетки;
         """
+
+        validate_object_type(screen, pygame.Surface)
+        validate_container_elements_type(cell_left_corner_coordinates, int)
+        validate_int_value(cell_size, (self.CELL_SIZE_MIN_VALUE, None))
 
         cell_center_coordinates = \
             (cell_left_corner_coordinates[0] + cell_size // 2,

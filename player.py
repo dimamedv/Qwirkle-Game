@@ -1,3 +1,6 @@
+from validators import *
+
+
 # класс "игрок".
 class Player:
     def __init__(self, nickname: str) -> None:
@@ -5,6 +8,8 @@ class Player:
         конструктор класса.
         :param nickname: никнейм игрока.
         """
+
+        validate_object_type(nickname, str)
 
         self.__nickname = nickname
 
@@ -24,5 +29,7 @@ class Player:
         :param new_nickname: новое значение поля
         __nickname.
         """
+
+        validate_object_type(new_nickname, str)
 
         self.__nickname = new_nickname
