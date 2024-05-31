@@ -822,6 +822,8 @@ class GameClient:
                                     if type_of_actions is None:
                                         type_of_actions = "exchange_of_chips"
 
+                                    self.new_chips_indexes = []
+
                                     self.send_make_an_exchange_of_chip_message()
                             elif (self.buttons_rects[1].collidepoint(
                                     pygame.mouse.get_pos())):
@@ -831,6 +833,8 @@ class GameClient:
                                         self.field.has_last_choice_init_value()):
                                     if type_of_actions is None:
                                         type_of_actions = "exchange_of_chips"
+
+                                    self.new_chips_indexes = []
 
                                     self.make_an_exchange_of_all_unexchanged_chips()
                             elif (self.buttons_rects[2].collidepoint(
@@ -869,6 +873,8 @@ class GameClient:
                                         if type_of_actions is None:
                                             type_of_actions = "exchange_of_chips"
 
+                                        self.new_chips_indexes = []
+
                                         self.send_make_an_exchange_of_chip_message()
                                 case pygame.K_r:
                                     if (self.has_right_to_move and
@@ -877,6 +883,8 @@ class GameClient:
                                             self.field.has_last_choice_init_value()):
                                         if type_of_actions is None:
                                             type_of_actions = "exchange_of_chips"
+
+                                        self.new_chips_indexes = []
 
                                         self.make_an_exchange_of_all_unexchanged_chips()
                                 case pygame.K_f:
