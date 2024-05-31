@@ -556,15 +556,19 @@ class Field:
         else:
             vertical_line_points = vertical_line_new_length
 
-            if vertical_line_points == 6:
+            if vertical_line_new_length == 6:
                 vertical_line_points += 6
+            elif vertical_line_new_length <= 1:
+                vertical_line_points = 0
 
             horizontal_line_points = horizontal_line_new_length
 
-            if horizontal_line_points == 6:
-                vertical_line_points += 6
+            if horizontal_line_new_length == 6:
+                horizontal_line_points += 6
+            elif horizontal_line_points <= 1:
+                horizontal_line_points = 0
 
-            points = vertical_line_new_length + vertical_line_new_length
+            points = vertical_line_points + horizontal_line_points
 
         return \
             (((will_vertical_line_correct and
