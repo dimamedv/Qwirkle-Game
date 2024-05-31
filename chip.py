@@ -12,8 +12,8 @@ def get_rotated_point_coordinates(
     """
     возвращает координаты точки, повернутой на угол вокруг
     центральной точки.
-    :param point_coordinates: координаты точки;
-    :param center_coordinates: координаты центральной точки;
+    :param point_coordinates: координаты точки.
+    :param center_coordinates: координаты центральной точки.
     :param angle_in_radians: угол поворота в радианах.
     :return: координаты точки, повернутой на угол вокруг
     центральной точки.
@@ -77,7 +77,7 @@ class Chip:
                  color_of_figure: pygame.Color) -> None:
         """
         конструктор класса.
-        :param figure: фигура на фишке;
+        :param figure: фигура на фишке.
         :param color_of_figure: цвет фигуры.
         """
 
@@ -90,6 +90,27 @@ class Chip:
         self.__figure = figure
 
         self.__color_of_figure = color_of_figure
+
+    def __eq__(self, other_chip) -> bool:
+        """
+        перегрузка оператора сравнения
+        :param other_chip:
+        :return:
+        """
+
+        if isinstance(other_chip, Chip):
+            return \
+                (self.__figure == other_chip.__figure and
+                 self.__color_of_figure == other_chip.__color_of_figure)
+
+        return False
+
+    def __hash__(self) -> None:
+        """
+        перегрузка оператора хеширования.
+        """
+        
+        return hash((self.__figure, self.color_of_figure_tuple))
 
     @property
     def figure(self) -> int:
@@ -131,11 +152,11 @@ class Chip:
         рисует фигуру (круг, квадрат, ромб, клевер, четырёхконечную
         звезду или восьмиконечную звезду) на фишке, которую игрок
         хочет выставить на игровое поле в определенную клетку.
-        :param screen: объект окна игры;
+        :param screen: объект окна игры.
         :param cell_left_corner_coordinates: координаты левого
         верхнего угла клетки игрового поля, в которую игрок хочет
-        поместить фишку;
-        :param cell_size: размер клетки;
+        поместить фишку.
+        :param cell_size: размер клетки.
         """
 
         validate_object_type(screen, pygame.Surface)

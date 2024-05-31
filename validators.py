@@ -58,9 +58,9 @@ def validate_int_value(
         first_arg_name: str = "unknown") -> None:
     """
     производит валидацию целочисленного значения.
-    :param value: значение;
+    :param value: значение.
     :param valid_value_borders: границы валидного
-    значения;
+    значения.
     :param first_arg_name: имя переменной.
     """
 
@@ -85,9 +85,9 @@ def validate_object_type(
         first_arg_name: str = "unknown") -> None:
     """
     производит валидацию типа объекта.
-    :param validated_object: валидируемый объект;
+    :param validated_object: валидируемый объект.
     :param required_type_of_object: требуемый
-    тип объекта;
+    тип объекта.
     :param first_arg_name: имя переменной.
     """
 
@@ -105,9 +105,9 @@ def validate_container_elements_type(
         first_arg_name: str = "unknown") -> None:
     """
     производит валидацию типа элементов контейнера.
-    :param validated_container: валидируемый контейнер;
+    :param validated_container: валидируемый контейнер.
     :param required_type_of_element: требуемый
-    тип элемента списка;
+    тип элемента списка.
     :param first_arg_name: имя списка.
     """
 
@@ -129,10 +129,10 @@ def validate_equality(
     """
     производит валидацию равенства двух объектов.
     :param first_validated_object: первый валидируемый
-    объект;
+    объект.
     :param second_validated_object: второй валидируемый
-    объект;
-    :param first_arg_name: имя первого объекта;
+    объект.
+    :param first_arg_name: имя первого объекта.
     :param second_arg_name: имя второго объекта.
     """
 
@@ -153,9 +153,9 @@ def validate_presence_in_container(
         second_arg_name: str = "unknown") -> None:
     """
     производит валидацию нахождения объекта в контейнере.
-    :param validated_object: валидируемый объект;
-    :param container: контейнер;
-    :param first_arg_name: имя объекта;
+    :param validated_object: валидируемый объект.
+    :param container: контейнер.
+    :param first_arg_name: имя объекта.
     :param second_arg_name: имя контейнера.
     """
 

@@ -232,12 +232,12 @@ if __name__ == "__main__":
         """
         возвращает однотипные прямоугольники
         :param left_corner_x: самая левая абсцисса, относящаяся
-        к прямоугольникам;
+        к прямоугольникам.
         :param right_corner_x: самая правая абсцисса, относящаяся
-        к прямоугольникам;
-        :param y: самая верхняя ордината, относящаяся к прямоугольникам;
+        к прямоугольникам.
+        :param y: самая верхняя ордината, относящаяся к прямоугольникам.
         :param step: шаг цикла (расстояние от левой стороны прямоугольника
-        до левой стороны его соседа);
+        до левой стороны его соседа).
         :param rect_sizes: размеры прямоугольника.
         :return: однотипные прямоугольники.
         """
@@ -263,8 +263,8 @@ if __name__ == "__main__":
         :param rects: прямоугольники, в которых располагаются
         фишки.
         :param deck_for_draw: отрисовываемая колода
-        фишек;
-        :param current_chip_index: индекс текущей фишки;
+        фишек.
+        :param current_chip_index: индекс текущей фишки.
         :param indexes_of_exchanged_chips: индексы обменянных
         фишек.
         :param indexes_of_new_chips: индексы новых фишек.
@@ -339,9 +339,9 @@ if __name__ == "__main__":
             rects_of_buttons: list[pygame.Rect],
             labels: list[str]) -> None:
         """
-
-        :param rects_of_buttons:
-        :return:
+        отрисовывает кнопки.
+        :param rects_of_buttons: прямоугольники кнопок.
+        :param labels: надписи на кнопках.
         """
 
         validate_container_elements_type(rects_of_buttons, pygame.Rect)
@@ -395,9 +395,9 @@ if __name__ == "__main__":
         возвращает индексы строки и столбца клетки
         игрового поля по позиции мыши в момент клика.
         :param mouse_pos: позиция мыши в окне на
-        момент совершения клика;
+        момент совершения клика.
         :param viewed_field: проcматриваемое игровое
-        поле;
+        поле.
         :return: индексы строки и столбца клетки
         игрового поля по позиции мыши.
         """
@@ -431,9 +431,9 @@ if __name__ == "__main__":
         :param choice_cell_indexes: индексы строки
         и столбца клетки изменяемого игрового поля,
         которую пользователь выбрал для выставления
-        фишки на поле;
+        фишки на поле.
         :param field_for_edit: изменяемое игровое
-        поле;
+        поле.
         :param chip_for_putting_up: фишка для
         выставления на поле.
         """
@@ -460,7 +460,7 @@ if __name__ == "__main__":
         возвращает фишку, выставленную на игровое поле,
         обратно в колоду.
         :param current_chip_parameters: параметры текущей
-        фишки (объект класса Chip и индекс места в колоде);
+        фишки (объект класса Chip и индекс места в колоде).
         :param deck: колода фишек.
         """
 
@@ -480,11 +480,9 @@ if __name__ == "__main__":
             indexes_of_exchanged_chips: list[int]) -> None:
         """
         производит обмен текущей фишки колоды, если это возможно.
-        :param game_field: игровое поле;
-        :param chips_heap: "куча" фишек;
-        :param chips_deck: колода фишек;
+        :param chips_deck: колода фишек.
         :param current_chip_parameters: параметры текущей
-        фишки (объект класса Chip и индекс места в колоде);
+        фишки (объект класса Chip и индекс места в колоде).
         :param indexes_of_exchanged_chips: индексы обменянных
         фишек в колоде.
         """
@@ -525,7 +523,7 @@ if __name__ == "__main__":
         validate_container_elements_type(indexes_of_exchanged_chips, int)
 
         indexes_of_chips_to_exchange = \
-            list(set(chips_deck.get_non_empty_places_for_chips_indexes()) -
+            list(set(chips_deck.non_empty_places_for_chips_indexes) -
                  set(indexes_of_exchanged_chips))
 
         deck_returned_content = \
@@ -555,7 +553,7 @@ if __name__ == "__main__":
             chips_deck: Deck) -> tuple[Chip, int, list[int], list[int]]:
         """
         завершает ход игрока.
-        :param chips_deck: колода фишек;
+        :param chips_deck: колода фишек.
         :return текущая фишка, индекс места текущей фишки в колоде, список
         индексов мест обменянных фишек колоды, список индексов мест новых
         фишек колоды.
@@ -563,16 +561,16 @@ if __name__ == "__main__":
 
         validate_object_type(chips_deck, Deck)
 
-        indexes_of_new_chips = chips_deck.get_empty_places_for_chips_indexes()
+        indexes_of_new_chips = chips_deck.empty_places_for_chips_indexes
 
         extra_chips = chips_deck.replenish(heap.give_chips(Deck.N_CHIPS_MAX_VALUE))
 
         if extra_chips:
             heap.return_chips(extra_chips)
-        elif not chips_deck.is_full():
+        elif not chips_deck.is_full:
             indexes_of_new_chips = \
                 list(set(indexes_of_new_chips) -
-                     set(chips_deck.get_empty_places_for_chips_indexes()))
+                     set(chips_deck.empty_places_for_chips_indexes))
 
         return None, -1, [], indexes_of_new_chips
 
@@ -584,8 +582,8 @@ if __name__ == "__main__":
         возвращает индекс текущей фишки исходя из позиции,
         которую занимает элемент с определенным значением
         в контейнере.
-        :param certain_value: определенное значение;
-        :param container: контейнер;
+        :param certain_value: определенное значение.
+        :param container: контейнер.
         :return: индекс текущей фишки.
         """
 
@@ -600,12 +598,12 @@ if __name__ == "__main__":
             current_chip_parameters: tuple[Chip, int]) -> tuple[Chip | None, int | None]:
         """
         возвращает новые параметры текущей фишки.
-        :param certain_value: определенное значение;
-        :param container: контейнер;
-        :param game_field: игровое поле;
-        :param chips_deck: колода фишек;
+        :param certain_value: определенное значение.
+        :param container: контейнер.
+        :param game_field: игровое поле.
+        :param chips_deck: колода фишек.
         :param current_chip_parameters: параметры текущей
-        фишки (объект класса Chip и индекс места в колоде);
+        фишки (объект класса Chip и индекс места в колоде).
         :return: новые параметры текущей фишки (объект класса
         Chip и индекс места в колоде).
         """
@@ -730,7 +728,7 @@ if __name__ == "__main__":
                             (current_chip, current_chip_index),
                             exchanged_chips_indexes)
                     elif buttons_rects[1].collidepoint(pygame.mouse.get_pos()):
-                        if (not player_deck.is_empty() and
+                        if (not player_deck.is_empty and
                                 field.has_last_choice_init_value()):
                             (current_chip,
                              current_chip_index,
@@ -766,7 +764,7 @@ if __name__ == "__main__":
                                      new_chips_indexes) = \
                                         complete_the_move(player_deck)
                             case pygame.K_r:
-                                if (not player_deck.is_empty() and
+                                if (not player_deck.is_empty and
                                         field.has_last_choice_init_value()):
                                     (current_chip,
                                      current_chip_index,

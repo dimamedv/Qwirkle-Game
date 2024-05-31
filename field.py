@@ -1,4 +1,7 @@
 from chip import Chip
+from deck import Deck
+
+from copy import copy
 
 
 # класс "игровое поле".
@@ -47,15 +50,22 @@ class Field:
                  last_choice: tuple[int, int] = None,
                  n_laid_out_chips: int = None,
                  cell_row_index_shift: int = None,
-                 cell_column_index_shift: int = None) -> None:
+                 cell_column_index_shift: int = None,
+                 min_max_cell_indexes: tuple[int, int, int, int] = None) -> None:
         """
         конструктор класса.
-        :param content: содержимое игрового поля;
+        :param content: содержимое игрового поля.
         :param last_choice: индексы строки и столбца
         последней клетки игрового поля, в которую
-        пользователь хотел поместить фишку;
+        пользователь хотел поместить фишку.
         :param n_laid_out_chips: количество выложенных
         на поле фишек.
+        :param cell_row_index_shift: сдвиг индекса строки
+        клетки.
+        :param cell_column_index_shift: сдвиг индекса строки
+        клетки.
+        :param min_max_cell_indexes: минимальные и максимальные
+        индексы клеток фишек.
         """
 
         self.__content = \
@@ -63,6 +73,8 @@ class Field:
              for _ in range(self.N_CELLS_IN_HEIGHT)] if content is None else content
 
         if last_choice is None:
+            self.__last_choice = None
+
             self.reset_last_choice()
         else:
             self.__last_choice = last_choice
@@ -79,22 +91,40 @@ class Field:
         else:
             self.__cell_column_index_shift = cell_column_index_shift
 
+        if min_max_cell_indexes is not None:
+            self.__min_cell_row_index = min_max_cell_indexes[0]
+            self.__min_cell_column_index = min_max_cell_indexes[1]
+
+            self.__max_cell_row_index = min_max_cell_indexes[2]
+            self.__max_cell_column_index = min_max_cell_indexes[3]
+        else:
+            self.__min_cell_row_index = self.N_CELLS_IN_HEIGHT
+            self.__min_cell_column_index = self.N_CELLS_IN_WIDTH
+
+            self.__max_cell_row_index = -1
+            self.__max_cell_column_index = -1
+
     def copy(self,
              copy_last_choice: bool = False):
         """
         возвращает копию игрового поля.
         :param copy_last_choice: флаг, указывающий,
-        копировать поле last_choice или нет;
+        копировать поле last_choice или нет.
         :return: копия игрового поля.
         """
 
-        last_choice_to_copy = self.__last_choice if copy_last_choice else None
+        last_choice_to_copy = \
+            self.__last_choice if copy_last_choice else None
 
-        return Field(self.__content,
+        return Field(copy(self.__content),
                      last_choice_to_copy,
-                     self.__n_put_up_chips,
-                     self.__cell_row_index_shift,
-                     self.__cell_column_index_shift)
+                     copy(self.__n_put_up_chips),
+                     copy(self.__cell_row_index_shift),
+                     copy(self.__cell_column_index_shift),
+                     (copy(self.__min_cell_row_index),
+                      copy(self.__min_cell_column_index),
+                      copy(self.__max_cell_row_index),
+                      copy(self.__max_cell_column_index)))
 
     @property
     def n_put_up_chips(self) -> int:
@@ -131,6 +161,23 @@ class Field:
         устанавливает значение по умолчанию
         для поля __last_choice.
         """
+
+        if self.__last_choice is not None:
+            self.__min_cell_row_index = min(
+                self.__last_choice[0],
+                self.__min_cell_row_index)
+
+            self.__min_cell_column_index = min(
+                self.__last_choice[1],
+                self.__min_cell_column_index)
+
+            self.__max_cell_row_index = max(
+                self.__last_choice[0],
+                self.__max_cell_row_index)
+
+            self.__max_cell_column_index = max(
+                self.__last_choice[1],
+                self.__max_cell_column_index)
 
         self.__last_choice = self.LAST_CHOICE_INIT_VALUE
 
@@ -231,7 +278,7 @@ class Field:
             cell_indexes: tuple[int, int]) -> None:
         """
         помещает фишку на игровое поле.
-        :param chip: объект фишки;
+        :param chip: объект фишки.
         :param cell_indexes: индексы строки и
         столбца клетки игрового поля.
         """
@@ -261,7 +308,7 @@ class Field:
         возвращает содержимое клетки игрового поля.
         (фишку или None).
         :param cell_indexes: индексы строки и столбца
-        клетки игрового поля;
+        клетки игрового поля.
         :return: содержимое клетки игрового поля.
         """
 
@@ -282,7 +329,7 @@ class Field:
         игрового поля расположена фишка, в противном
         случае - 'ложь'.
         :param cell_indexes: индексы строки и столбца
-        клетки игрового поля;
+        клетки игрового поля.
         :return: 'истина' или 'ложь'.
         """
 
@@ -313,7 +360,7 @@ class Field:
         фишек на игровом поле.
         :param cell_indexes: индексы строки и столбца
         рассматриваемой клетки игрового поля.
-        :param type_of_chips_line: тип линии;
+        :param type_of_chips_line: тип линии.
         :param type_of_cycle: тип цикла.
         :return: 'истина' или 'ложь'.
         """
@@ -338,7 +385,7 @@ class Field:
         поля, с которой начинается линия фишек.
         :param cell_indexes: индексы строки и столбца клетки
         игрового поля, с которой начинается поиск начала линии
-        фишек
+        фишек.
         :param cell_indexes_deltas: значения шага изменения
         индексо строки и столбца клетки для поиска.
         :param type_of_chips_line: тип линии фишек (вертикальный
@@ -376,7 +423,19 @@ class Field:
             cell_indexes: tuple[int, int],
             cell_indexes_deltas: tuple[int, int],
             type_of_chips_line: int) -> tuple[bool, int]:
-        """"""
+        """
+        возвращает параметры обработанной линии фишек.
+        :param cell_indexes: индексы строки и столбца
+        клетки игрового поля, с которой начинается обработка
+        линии фишек.
+        :param cell_indexes_deltas: значения шага изменения
+        индексо строки и столбца клетки для поиска.
+        :param type_of_chips_line: тип линии фишек (вертикальный
+        или горизонтальный).
+        :return: параметры обработанной линии фишек (будет ли
+        она соответствовать правилам игры после добавления 
+        фишки, а также новая количество фишек в линии).
+        """
 
         this_chip = self.get_content_of_cell(cell_indexes)
 
@@ -437,7 +496,7 @@ class Field:
         столбца клетки игрового поля рассматриваемой
         фишки.
         :param type_of_chips_line: тип линии фишек
-        (горизонтальная или вертикальная);
+        (горизонтальная или вертикальная).
         :return: 'истина' или 'ложь'.
         """
 
@@ -466,9 +525,9 @@ class Field:
             cell_indexes_deltas,
             type_of_chips_line)
 
-    def __is_last_choice_correct_in_the_context_of_chips_lines(
+    def is_last_choice_correct_in_the_context_of_chips_lines(
             self,
-            cell_indexes: tuple[int, int]) -> bool:
+            cell_indexes: tuple[int, int]) -> tuple[bool, int]:
         """
         возвращает значение 'истина', если выбор пользователем
         клетки поля для размещения фишки является корректным
@@ -491,9 +550,27 @@ class Field:
                 cell_indexes,
                 self.HORIZONTAL_LINE_OF_CHIPS)
 
-        return (will_vertical_line_correct and
-                will_horizontal_line_correct and
-                (vertical_line_new_length + horizontal_line_new_length) > 2)
+        if (vertical_line_new_length == 1 and
+                horizontal_line_new_length == 1):
+            points = 0
+        else:
+            vertical_line_points = vertical_line_new_length
+
+            if vertical_line_points == 6:
+                vertical_line_points += 6
+
+            horizontal_line_points = horizontal_line_new_length
+
+            if horizontal_line_points == 6:
+                vertical_line_points += 6
+
+            points = vertical_line_new_length + vertical_line_new_length
+
+        return \
+            (((will_vertical_line_correct and
+               will_horizontal_line_correct and
+               (vertical_line_new_length + horizontal_line_new_length) > 2)),
+             points)
 
     def is_last_choice_correct(self) -> bool:
         """
@@ -508,8 +585,8 @@ class Field:
         return \
             (not self.has_last_choice_init_value() and
              (self.has_only_one_chip() or
-              self.__is_last_choice_correct_in_the_context_of_chips_lines(
-                  self.__last_choice)))
+              self.is_last_choice_correct_in_the_context_of_chips_lines(
+                  self.__last_choice)[0]))
 
     def shift_displayed_part(self,
                              direction: int) -> None:
@@ -546,5 +623,84 @@ class Field:
         :param new_chip: новая фишка.
         """
 
-        if new_chip is not None and not self.has_last_choice_init_value():
+        if (new_chip is not None and
+                not self.has_last_choice_init_value()):
             self.__content[self.__last_choice[0]][self.__last_choice[1]] = new_chip
+
+    def is_deck_useless(self, deck_content: list[Chip]) -> bool:
+        """
+        возвращает значение 'истина', если ни одну
+        из фишек колоды нельзя выставить на поле,
+        в противном случае - 'ложь'.
+        :param deck_content: фишки колоды.
+        :return: 'истина' или 'ложь'.
+        """
+
+        if (len(deck_content) == 0 or
+                self.n_put_up_chips == self.N_LAID_OUT_CHIPS_MAX_VALUE):
+            return True
+
+        if self.n_put_up_chips == 0:
+            return False
+
+        copy_of_field = self.copy()
+
+        for element in deck_content:
+            if isinstance(element, Chip):
+                min_row_index = self.__min_cell_row_index
+                min_row_index -= min_row_index > 0
+
+                min_column_index = self.__min_cell_column_index
+                min_column_index -= min_column_index > 0
+
+                max_row_index = self.__max_cell_row_index
+                max_row_index += max_row_index < self.N_CELLS_IN_HEIGHT
+
+                max_column_index = self.__max_cell_column_index
+                max_column_index += max_row_index < self.N_CELLS_IN_WIDTH
+
+                for i in range(min_row_index, max_row_index + 1):
+                    for j in range(min_column_index, max_column_index + 1):
+                        if not isinstance(copy_of_field.get_content_of_cell((i, j)), Chip):
+                            copy_of_field.place_chip(element, (i, j))
+                            copy_of_field.last_choice = (i, j)
+
+                            flag = copy_of_field.is_last_choice_correct()
+
+                            copy_of_field.reset_last_choice()
+                            copy_of_field.remove_chip((i, j))
+
+                            if flag:
+                                return False
+
+        return True
+
+    @property
+    def min_max_cell_indexes(self) -> tuple[int, int, int, int]:
+        """
+        возвращает минимальные и максимальные значения
+        индексов клеток, в которых расположены фишки.
+        :return: минимальные и максимальные значения
+        индексов клеток, в которых расположены фишки.
+        """
+
+        return \
+            (self.__min_cell_row_index,
+             self.__min_cell_column_index,
+             self.__max_cell_row_index,
+             self.__max_cell_column_index)
+
+    def set_min_max_cell_indexes(
+            self,
+            indexes: tuple[int, int, int, int]) -> None:
+        """
+        устанавливает новые значения для минимальных и
+        максимальных значений индексов клеток, в которых
+        расположены фишки.
+        :param indexes: новые значения.
+        """
+
+        self.__min_cell_row_index = indexes[0]
+        self.__min_cell_column_index = indexes[1]
+        self.__max_cell_row_index = indexes[2]
+        self.__max_cell_column_index = indexes[3]

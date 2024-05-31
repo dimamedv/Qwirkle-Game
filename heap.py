@@ -12,6 +12,8 @@ from random import shuffle, randint
 class Heap:
     GIVE_CHIPS_PARAMETER_MIN_VALUE = 1
 
+    N_CHIPS_MAX_VALUE = 108
+
     def __init__(self):
         """
         конструктор класса.
