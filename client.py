@@ -49,6 +49,8 @@ class GameClient:
 
         self.is_game_over = False
 
+        self.is_exchange_buttons_blocked = False
+
         self.messages_queue = queue.Queue()
 
         pygame.init()
@@ -494,6 +496,11 @@ class GameClient:
                 button_color = GameConstants.GRAY_COLOR
                 label_background_color = button_color
 
+            if (i < (WindowParameters.N_BUTTONS - 1) and
+                    self.is_exchange_buttons_blocked):
+                button_color = GameConstants.GRAY_COLOR
+                label_background_color = button_color
+
             pygame.draw.rect(
                 screen,
                 button_color,
@@ -791,6 +798,8 @@ class GameClient:
 
                                     n_put_up_chips += 1
 
+                                    self.is_exchange_buttons_blocked = True
+
                                     self.send_place_chip_message(
                                         current_chip_copy,
                                         cell_indexes,
@@ -832,8 +841,6 @@ class GameClient:
 
                                     self.has_right_to_move = False
 
-                                    self.send_complete_the_move_message()
-
                                     type_of_actions = None
 
                                     self.necessary_property = []
@@ -843,6 +850,10 @@ class GameClient:
                                     n_put_up_chips = 0
 
                                     is_next_chip_correct = True
+
+                                    self.is_exchange_buttons_blocked = False
+
+                                    self.send_complete_the_move_message()
                     case pygame.KEYDOWN:
                         if event.key in GameConstants.SIMPLE_ACTIONS_KEYS:
                             match event.key:
@@ -886,6 +897,8 @@ class GameClient:
                                         n_put_up_chips = 0
 
                                         is_next_chip_correct = True
+
+                                        self.is_exchange_buttons_blocked = False
                                 case pygame.K_g:
                                     if not self.field.has_last_choice_init_value():
                                         self.return_chip_back_to_the_deck()
